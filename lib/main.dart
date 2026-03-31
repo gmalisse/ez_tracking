@@ -11,7 +11,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Login',
-      theme: ThemeData.dark(useMaterial3: true),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF121212), // fundo
+      ),
       home: const LoginPage(),
     );
   }
@@ -22,6 +26,9 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const green = Color(0xFF12964A);
+    const inputColor = Color(0xFF1E1E1E);
+
     return Scaffold(
       body: Center(
         child: Padding(
@@ -29,17 +36,31 @@ class LoginPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // EMAIL
+              Image.asset(
+                'assets/logo.png',
+                height: 100,
+                width: 250,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 24),
+
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Email', style: TextStyle(color: Color.fromRGBO(57, 255, 20, 1), fontFamily: 'Orbitron'), ),
+                child: Text(
+                  'Email',
+                  style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                ),
               ),
               const SizedBox(height: 8),
-              const TextField(
+              TextField(
+                style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  fillColor: Color.fromRGBO(40, 40, 40, 1),
                   filled: true,
+                  fillColor: inputColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
 
@@ -48,16 +69,22 @@ class LoginPage extends StatelessWidget {
               // SENHA
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Senha', style: TextStyle(color: Color.fromRGBO(57, 255, 20, 1), fontFamily: 'Orbitron'), ),
-                
+                child: Text(
+                  'Senha',
+                  style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                ),
               ),
               const SizedBox(height: 8),
-              const TextField(
+              TextField(
                 obscureText: true,
+                style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  fillColor: Color.fromRGBO(40, 40, 40, 1),
                   filled: true,
+                  fillColor: inputColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
 
@@ -67,22 +94,195 @@ class LoginPage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomePage()),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromRGBO(16, 96, 2, 1),
+                    backgroundColor: green,
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  child: const Text('Login', style: TextStyle(color: Color.fromRGBO(255, 255, 255, 1), fontFamily: 'Orbitron'), ),
+                  child: const Text(
+                    'Login',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Orbitron',
+                    ),
+                  ),
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // TEXTO FINAL
-              const Text('Ou cadastre-se', style: TextStyle(color: Color.fromRGBO(255, 255, 255, 1), fontFamily: 'Orbitron'), ),
+              const Text(
+                'Ou cadastre-se',
+                style: TextStyle(color: Colors.white70, fontFamily: 'Orbitron'),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  Widget build(BuildContext context) {
+    const green = Color(0xFF12964A);
+
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF121212),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.green, size: 30),
+          onPressed: () {
+            _scaffoldKey.currentState?.openDrawer();
+          },
+        ),
+        title: Image.asset(
+          'assets/logo.png',
+          height: 50,
+          width: 150,
+          fit: BoxFit.contain,
+          alignment: Alignment.topLeft,
+        ),
+      ),
+      drawer: Drawer(
+        backgroundColor: const Color(0xFF1E1E1E),
+        child: Column(
+          children: [
+            Container(
+              height: 120,
+              child: Center(
+                child: Image.asset(
+                  'assets/logo.png',
+                  height: 120,
+                  width: 150,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+
+            // Lista de páginas
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.home, color: Colors.white),
+                    title: const Text(
+                      'Home',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Orbitron',
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HomePage(),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.person, color: Colors.white),
+                    title: const Text(
+                      'Perfil',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Orbitron',
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Sair',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Orbitron',
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: Stack(
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Meus jogos',
+                      style: TextStyle(
+                        color: green,
+                        fontSize: 24,
+                        fontFamily: 'Orbitron',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 24,
+            right: 24,
+            child: FloatingActionButton(
+              onPressed: () {},
+              backgroundColor: green,
+              child: const Icon(Icons.add, color: Colors.black),
+            ),
+          ),
+        ],
       ),
     );
   }
