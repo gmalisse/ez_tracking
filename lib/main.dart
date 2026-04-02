@@ -167,7 +167,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: const Color(0xFF1E1E1E),
         child: Column(
           children: [
-            Container(
+            SizedBox(
               height: 120,
               child: Center(
                 child: Image.asset(
@@ -213,6 +213,12 @@ class _HomePageState extends State<HomePage> {
                     ),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfilePage(),
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -283,6 +289,177 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const green = Color(0xFF12964A);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF121212),
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.green),
+        title: const Text(
+          'Perfil',
+          style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfilePage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 16),
+            CircleAvatar(
+              radius: 52,
+              backgroundColor: green,
+              child: CircleAvatar(
+                radius: 48,
+                backgroundImage: const AssetImage('assets/logo.png'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Nome do Usuário',
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Orbitron',
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 24),
+            _profileStat('Jogos jogados', '...', green),
+            _profileStat('Total de horas', '...', green),
+            _profileStat('Gênero favorito', '...', green),
+            _profileStat('Jogo com mais horas', '...', green),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Widget _profileStat(String label, String value, Color green) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFF1E1E1E),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: green.withAlpha((0.4 * 255).round())),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white70, fontFamily: 'Orbitron'),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: 'Orbitron',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class EditProfilePage extends StatefulWidget {
+  const EditProfilePage({super.key});
+
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  final TextEditingController _nameController = TextEditingController(text: '');
+
+  @override
+  Widget build(BuildContext context) {
+    const green = Color(0xFF12964A);
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF121212),
+        elevation: 0,
+        title: const Text(
+          'Editar Perfil',
+          style: TextStyle(fontFamily: 'Orbitron'),
+        ),
+        centerTitle: true,
+      ),
+      backgroundColor: const Color(0xFF121212),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Nome',
+              style: TextStyle(color: Colors.white70, fontFamily: 'Orbitron'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFF1E1E1E),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: green,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'Salvar',
+                  style: TextStyle(fontFamily: 'Orbitron'),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
