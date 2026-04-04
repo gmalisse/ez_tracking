@@ -323,7 +323,12 @@ class _AddUserPageState extends State<AddUserPage> {
                 const SizedBox(height: 20),
 
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -497,7 +502,12 @@ class _HomePageState extends State<HomePage> {
             bottom: 24,
             right: 24,
             child: FloatingActionButton(
-              onPressed: () {},
+              onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AddGamePage()),
+                    );
+                  },
               backgroundColor: green,
               child: const Icon(Icons.add, color: Colors.black),
             ),
@@ -623,9 +633,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF121212),
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.green),
         title: const Text(
           'Editar Perfil',
-          style: TextStyle(fontFamily: 'Orbitron'),
+          style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
         ),
         centerTitle: true,
       ),
@@ -673,6 +684,313 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class AddGamePage extends StatefulWidget {
+  const AddGamePage({super.key});
+
+  @override
+  State<AddGamePage> createState() => _AddGamePageState();
+}
+
+class _AddGamePageState extends State<AddGamePage> {
+  String? _selectedValue;
+  String? _platformValue;
+  DateTime? _startDate;
+  DateTime? _endDate;
+  bool _isCompleted = false;
+
+  final List<String> _opcoes = ['Minecraft', 'Fortnite', 'Elden Ring'];
+  final List<String> _plataformas = ['Playstation', 'Xbox', 'PC', 'Nintendo Switch'];
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
+  final TextEditingController _hoursController = TextEditingController();
+
+  Future<void> _selectDate(BuildContext context, bool isStart) async {
+    final now = DateTime.now();
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      locale: const Locale('pt', 'BR'),
+      initialDate: now,
+      firstDate: DateTime(1950),
+      lastDate: now,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF12964A),
+              onPrimary: Colors.white,
+              surface: Color(0xFF1E1E1E),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF121212),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final formatted =
+          '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+
+      setState(() {
+        if (isStart) {
+          _startDate = picked;
+          _startDateController.text = formatted;
+        } else {
+          _endDate = picked;
+          _endDateController.text = formatted;
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _startDateController.dispose();
+    _endDateController.dispose();
+    _hoursController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const green = Color(0xFF12964A);
+    const inputColor = Color(0xFF1E1E1E);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF121212),
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.green),
+        title: const Text(
+          'Adicionar jogo',
+          style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
+        ),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+
+                const SizedBox(height: 12),
+
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Jogo',
+                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                  DropdownMenu<String>(
+                    width: double.infinity,
+                    enableFilter: true,
+                    initialSelection: _selectedValue,
+                    textStyle: const TextStyle(color: Colors.white),
+                    onSelected: (String? value) {
+                      setState(() {
+                        _selectedValue = value;
+                      });
+                  },
+                  dropdownMenuEntries: _opcoes.map((value) {
+                    return DropdownMenuEntry(value: value, label: value);
+                  }).toList(),
+                  inputDecorationTheme: const InputDecorationTheme(
+                    filled: true,
+                    fillColor: inputColor,
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    Column(
+                      children: [
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Plataforma',
+                            style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownMenu<String>(
+                          initialSelection: _platformValue,
+                          enableFilter: true,
+                          textStyle: const TextStyle(color: Colors.white),
+                          onSelected: (value) {
+                            setState(() {
+                              _platformValue = value;
+                            });
+                          },
+                          dropdownMenuEntries: _plataformas.map((value) {
+                            return DropdownMenuEntry(value: value, label: value);
+                          }).toList(),
+                          inputDecorationTheme: const InputDecorationTheme(
+                            filled: true,
+                            fillColor: inputColor,
+                            border: OutlineInputBorder(
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _isCompleted,
+                          activeColor: green,
+                          onChanged: (value) {
+                            setState(() {
+                              _isCompleted = value!;
+                            });
+                          },
+                        ),
+                        const Text(
+                          'Jogo concluído',
+                          style: TextStyle(color: Colors.white, fontFamily: 'Orbitron'),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
+                
+
+                const SizedBox(height: 12),
+
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Horas jogadas',
+                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _hoursController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: inputColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Início da jogatina',
+                              style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _startDateController,
+                            readOnly: true,
+                            onTap: () => _selectDate(context, true),
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: 'Selecione a data',
+                              hintStyle: const TextStyle(color: Colors.white54),
+                              filled: true,
+                              fillColor: inputColor,
+                              suffixIcon: const Icon(Icons.calendar_today, color: Colors.white70),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Fim da jogatina',
+                              style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _endDateController,
+                            readOnly: true,
+                            onTap: () => _selectDate(context, false),
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: 'Selecione a data',
+                              hintStyle: const TextStyle(color: Colors.white54),
+                              filled: true,
+                              fillColor: inputColor,
+                              suffixIcon: const Icon(Icons.calendar_today, color: Colors.white70),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomePage()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: green,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Salvar', style: TextStyle(color: Colors.white, fontFamily: 'Orbitron')),
+                ),
+
+              ],
+            ),
+          ),
         ),
       ),
     );
