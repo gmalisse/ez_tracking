@@ -1,5 +1,12 @@
+import 'package:ez_tracking/models/igdb_jogo.dart';
+import 'package:ez_tracking/models/igdb_plataforma.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:dropdown_search/dropdown_search.dart';
+import '../models/igdb_jogo.dart';
+import '../repositories/igdb_repository.dart';
+import '../repositories/jogo_repository.dart';
+import '../service/igdb_service.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -698,17 +705,19 @@ class AddGamePage extends StatefulWidget {
 }
 
 class _AddGamePageState extends State<AddGamePage> {
-  String? _selectedValue;
-  String? _platformValue;
+  IGDBGame? _selectedValue;
+  //IGDBPlataforma? _plataformaValue; # OBS:Variavel original, para usar a API do IGDB quando estiver funcionando
+  String? _plataformaValue;
   DateTime? _startDate;
   DateTime? _endDate;
   bool _isCompleted = false;
 
-  final List<String> _opcoes = ['Minecraft', 'Fortnite', 'Elden Ring'];
-  final List<String> _plataformas = ['Playstation', 'Xbox', 'PC', 'Nintendo Switch'];
+  final List<String> _plataformas = ['Playstation', 'Xbox', 'PC', 'Nintendo Switch']; //Mockado
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
   final TextEditingController _hoursController = TextEditingController();
+  final IGDBRepository igdbRepository = IGDBRepository(IGDBService());
+  final JogoRepository jogoRepository = JogoRepository();
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
     final now = DateTime.now();
@@ -795,26 +804,37 @@ class _AddGamePageState extends State<AddGamePage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                  DropdownMenu<String>(
-                    width: double.infinity,
-                    enableFilter: true,
-                    initialSelection: _selectedValue,
-                    textStyle: const TextStyle(color: Colors.white),
-                    onSelected: (String? value) {
-                      setState(() {
-                        _selectedValue = value;
-                      });
+                  DropdownSearch<IGDBGame>(
+                  compareFn: (a, b) => a.id == b.id,
+
+                  items: (filter, loadProps) async {
+                    if (filter.isEmpty) {
+                      return await igdbRepository.popular();
+                    }
+                    return await igdbRepository.search(filter);
                   },
-                  dropdownMenuEntries: _opcoes.map((value) {
-                    return DropdownMenuEntry(value: value, label: value);
-                  }).toList(),
-                  inputDecorationTheme: const InputDecorationTheme(
-                    filled: true,
-                    fillColor: inputColor,
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide.none,
-                    ),
+
+                  itemAsString: (game) => game.name,
+
+                  onSelected: (game) {
+                    setState(() {
+                      _selectedValue = game;
+                    });
+                  },
+
+                  popupProps: PopupProps.modalBottomSheet(
+                    showSearchBox: true,
                   ),
+
+                  dropdownBuilder: (context, selectedItem) {
+                    return Text(
+                      selectedItem?.name ?? 'Selecione um jogo',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 12),
@@ -832,12 +852,12 @@ class _AddGamePageState extends State<AddGamePage> {
                         ),
                         const SizedBox(height: 8),
                         DropdownMenu<String>(
-                          initialSelection: _platformValue,
+                          initialSelection: _plataformaValue,
                           enableFilter: true,
                           textStyle: const TextStyle(color: Colors.white),
                           onSelected: (value) {
                             setState(() {
-                              _platformValue = value;
+                              _plataformaValue = value;
                             });
                           },
                           dropdownMenuEntries: _plataformas.map((value) {
