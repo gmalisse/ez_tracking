@@ -5,9 +5,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import '../models/gameplay.dart';
 import '../models/jogo.dart';
+import '../models/userdata.dart';
 import '../repositories/gameplay_repository.dart';
 import '../repositories/igdb_repository.dart';
 import '../repositories/jogo_repository.dart';
+import '../repositories/userdata_repository.dart';
 import '../service/igdb_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'dart:io';
@@ -620,8 +622,94 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final GameplayRepository _gameplayRepository = GameplayRepository();
+  final JogoRepository _jogoRepository = JogoRepository();
+  final UserDataRepository _userDataRepository = UserDataRepository();
+  final int _currentUserId = 1;
+
+  bool _isLoading = true;
+  int _jogosJogados = 0;
+  double _totalHoras = 0.0;
+  String _generoFavorito = 'Não definido';
+  String _jogoMaisHoras = 'Nenhum';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final gameplays = await _gameplayRepository.getByUserId(_currentUserId);
+    final jogos = await _jogoRepository.getAll();
+    final jogosMap = {for (var jogo in jogos) jogo.id!: jogo};
+
+    final jogosJogados = gameplays.map((g) => g.jogosId).toSet().length;
+    final totalHoras = gameplays.fold<double>(
+      0.0,
+      (sum, g) => sum + g.horasJogadas,
+    );
+
+    String generoFavorito = 'Não definido';
+    if (gameplays.isNotEmpty) {
+      final consoleCount = <String, int>{};
+      for (final gameplay in gameplays) {
+        consoleCount[gameplay.console] =
+            (consoleCount[gameplay.console] ?? 0) + 1;
+      }
+      generoFavorito = consoleCount.entries
+          .reduce((a, b) => a.value >= b.value ? a : b)
+          .key;
+    }
+
+    String jogoMaisHoras = 'Nenhum';
+    if (gameplays.isNotEmpty) {
+      final hoursByJogo = <int, double>{};
+      for (final gameplay in gameplays) {
+        hoursByJogo[gameplay.jogosId] =
+            (hoursByJogo[gameplay.jogosId] ?? 0.0) + gameplay.horasJogadas;
+      }
+      final best = hoursByJogo.entries.reduce(
+        (a, b) => a.value >= b.value ? a : b,
+      );
+      jogoMaisHoras = jogosMap[best.key]?.nome ?? 'Jogo desconhecido';
+    }
+
+    final userData = UserData(
+      id: _currentUserId,
+      userId: _currentUserId,
+      jogosJogados: jogosJogados,
+      totalHoras: totalHoras,
+      generoFavorito: generoFavorito,
+      jogoMaisHoras: jogoMaisHoras,
+    );
+
+    final existingUserData = await _userDataRepository.getByUserId(
+      _currentUserId,
+    );
+    if (existingUserData == null) {
+      await _userDataRepository.create(userData);
+    } else {
+      await _userDataRepository.update(userData);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _jogosJogados = jogosJogados;
+      _totalHoras = totalHoras;
+      _generoFavorito = generoFavorito;
+      _jogoMaisHoras = jogoMaisHoras;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -677,10 +765,18 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            _profileStat('Jogos jogados', '...', green),
-            _profileStat('Total de horas', '...', green),
-            _profileStat('Gênero favorito', '...', green),
-            _profileStat('Jogo com mais horas', '...', green),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else ...[
+              _profileStat('Jogos jogados', '$_jogosJogados', green),
+              _profileStat(
+                'Total de horas',
+                _totalHoras.toStringAsFixed(1),
+                green,
+              ),
+              _profileStat('Console favorito', _generoFavorito, green),
+              _profileStat('Jogo com mais horas', _jogoMaisHoras, green),
+            ],
           ],
         ),
       ),
