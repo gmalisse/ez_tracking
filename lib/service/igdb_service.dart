@@ -10,7 +10,8 @@ class IGDBService {
   Future<List<IGDBGame>> getGames(String query) async {
     final url = Uri.parse('https://api.igdb.com/v4/games');
 
-    final body = '''
+    final body =
+        '''
       fields name;
       search "$query";
       limit 50;
@@ -64,7 +65,8 @@ class IGDBService {
   Future<List<IGDBPlataforma>> searchPlatforms(String query) async {
     final url = Uri.parse('https://api.igdb.com/v4/platforms');
 
-    final body = '''
+    final body =
+        '''
       fields id, name;
       search "$query";
       limit 10;
@@ -81,10 +83,75 @@ class IGDBService {
     );
 
     if (response.statusCode != 200) {
+      throw Exception('Erro IGDB (${response.statusCode}): ${response.body}');
+    }
+    final data = json.decode(response.body) as List;
+    return data.map((e) => IGDBPlataforma.fromJson(e)).toList();
+  }
+
+  Future<List<int>> getPlatformIdsForGame(int gameId) async {
+    final url = Uri.parse('https://api.igdb.com/v4/games');
+
+    final body =
+        '''
+      fields platforms;
+      where id = $gameId;
+      limit 1;
+    ''';
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Client-ID': clientId,
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+      body: body,
+    );
+
+    if (response.statusCode != 200) {
       throw Exception(
-        'Erro IGDB (${response.statusCode}): ${response.body}'
+        'Erro ao buscar plataformas do jogo: ${response.statusCode} ${response.body}',
       );
     }
+
+    final data = json.decode(response.body) as List;
+    if (data.isEmpty) return [];
+
+    final platforms = data.first['platforms'];
+    if (platforms == null) return [];
+    return List<int>.from(platforms.cast<int>());
+  }
+
+  Future<List<IGDBPlataforma>> getPlatformsByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+
+    final url = Uri.parse('https://api.igdb.com/v4/platforms');
+    final idList = ids.join(',');
+
+    final body =
+        '''
+      fields id, name;
+      where id = ($idList);
+      limit ${ids.length};
+    ''';
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Client-ID': clientId,
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+      body: body,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Erro ao buscar plataformas por ID: ${response.statusCode} ${response.body}',
+      );
+    }
+
     final data = json.decode(response.body) as List;
     return data.map((e) => IGDBPlataforma.fromJson(e)).toList();
   }
@@ -109,7 +176,7 @@ class IGDBService {
 
     if (response.statusCode != 200) {
       throw Exception(
-        'Erro ao buscar plataformas: ${response.statusCode} ${response.body}'
+        'Erro ao buscar plataformas: ${response.statusCode} ${response.body}',
       );
     }
 

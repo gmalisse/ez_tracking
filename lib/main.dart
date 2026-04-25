@@ -7,6 +7,7 @@ import '../models/igdb_jogo.dart';
 import '../repositories/igdb_repository.dart';
 import '../repositories/jogo_repository.dart';
 import '../service/igdb_service.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -25,9 +26,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('pt', 'BR'),
-      ],
+      supportedLocales: const [Locale('pt', 'BR')],
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFF121212), // fundo
@@ -196,7 +195,8 @@ class _AddUserPageState extends State<AddUserPage> {
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
-        _dateController.text = '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+        _dateController.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
       });
     }
   }
@@ -319,7 +319,10 @@ class _AddUserPageState extends State<AddUserPage> {
                     hintStyle: const TextStyle(color: Colors.white54),
                     filled: true,
                     fillColor: inputColor,
-                    suffixIcon: const Icon(Icons.calendar_today, color: Colors.white70),
+                    suffixIcon: const Icon(
+                      Icons.calendar_today,
+                      color: Colors.white70,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -333,7 +336,9 @@ class _AddUserPageState extends State<AddUserPage> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const LoginPage(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -343,7 +348,13 @@ class _AddUserPageState extends State<AddUserPage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Cadastrar', style: TextStyle(color: Colors.white, fontFamily: 'Orbitron')),
+                  child: const Text(
+                    'Cadastrar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Orbitron',
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -353,7 +364,6 @@ class _AddUserPageState extends State<AddUserPage> {
     );
   }
 }
-
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -510,11 +520,11 @@ class _HomePageState extends State<HomePage> {
             right: 24,
             child: FloatingActionButton(
               onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AddGamePage()),
-                    );
-                  },
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AddGamePage()),
+                );
+              },
               backgroundColor: green,
               child: const Icon(Icons.add, color: Colors.black),
             ),
@@ -706,18 +716,49 @@ class AddGamePage extends StatefulWidget {
 
 class _AddGamePageState extends State<AddGamePage> {
   IGDBGame? _selectedValue;
-  //IGDBPlataforma? _plataformaValue; # OBS:Variavel original, para usar a API do IGDB quando estiver funcionando
-  String? _plataformaValue;
+  IGDBPlataforma? _plataformaValue;
+  List<IGDBPlataforma> _platformOptions = [];
+  bool _isLoadingPlatforms = false;
+  bool _hasLoadedPlatforms = false;
   DateTime? _startDate;
   DateTime? _endDate;
   bool _isCompleted = false;
 
-  final List<String> _plataformas = ['Playstation', 'Xbox', 'PC', 'Nintendo Switch']; //Mockado
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
   final TextEditingController _hoursController = TextEditingController();
   final IGDBRepository igdbRepository = IGDBRepository(IGDBService());
   final JogoRepository jogoRepository = JogoRepository();
+
+  Future<void> _loadPlatformsForSelectedGame() async {
+    if (_selectedValue?.id == null) return;
+
+    setState(() {
+      _isLoadingPlatforms = true;
+      _hasLoadedPlatforms = false;
+      _platformOptions = [];
+      _plataformaValue = null;
+    });
+
+    try {
+      final platformIds = await igdbRepository.getPlatformIdsForGame(
+        _selectedValue!.id!,
+      );
+      final platforms = await igdbRepository.getPlatformsByIds(platformIds);
+      setState(() {
+        _platformOptions = platforms;
+      });
+    } catch (_) {
+      setState(() {
+        _platformOptions = [];
+      });
+    } finally {
+      setState(() {
+        _isLoadingPlatforms = false;
+        _hasLoadedPlatforms = true;
+      });
+    }
+  }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
     final now = DateTime.now();
@@ -793,7 +834,6 @@ class _AddGamePageState extends State<AddGamePage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-
                 const SizedBox(height: 12),
 
                 const Align(
@@ -804,7 +844,7 @@ class _AddGamePageState extends State<AddGamePage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                  DropdownSearch<IGDBGame>(
+                DropdownSearch<IGDBGame>(
                   compareFn: (a, b) => a.id == b.id,
 
                   items: (filter, loadProps) async {
@@ -819,20 +859,19 @@ class _AddGamePageState extends State<AddGamePage> {
                   onSelected: (game) {
                     setState(() {
                       _selectedValue = game;
+                      _plataformaValue = null;
+                      _platformOptions = [];
+                      _hasLoadedPlatforms = false;
                     });
+                    _loadPlatformsForSelectedGame();
                   },
 
-                  popupProps: PopupProps.modalBottomSheet(
-                    showSearchBox: true,
-                  ),
+                  popupProps: PopupProps.modalBottomSheet(showSearchBox: true),
 
                   dropdownBuilder: (context, selectedItem) {
                     return Text(
                       selectedItem?.name ?? 'Selecione um jogo',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                     );
                   },
                 ),
@@ -840,41 +879,103 @@ class _AddGamePageState extends State<AddGamePage> {
                 const SizedBox(height: 12),
 
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      children: [
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Plataforma',
-                            style: TextStyle(color: green, fontFamily: 'Orbitron'),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        DropdownMenu<String>(
-                          initialSelection: _plataformaValue,
-                          enableFilter: true,
-                          textStyle: const TextStyle(color: Colors.white),
-                          onSelected: (value) {
-                            setState(() {
-                              _plataformaValue = value;
-                            });
-                          },
-                          dropdownMenuEntries: _plataformas.map((value) {
-                            return DropdownMenuEntry(value: value, label: value);
-                          }).toList(),
-                          inputDecorationTheme: const InputDecorationTheme(
-                            filled: true,
-                            fillColor: inputColor,
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Plataforma',
+                              style: TextStyle(
+                                color: green,
+                                fontFamily: 'Orbitron',
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          DropdownSearch<IGDBPlataforma>(
+                            compareFn: (a, b) => a.id == b.id,
+                            items: (filter, loadProps) async {
+                              if (_selectedValue == null) {
+                                return [];
+                              }
+
+                              if (!_hasLoadedPlatforms &&
+                                  !_isLoadingPlatforms) {
+                                await _loadPlatformsForSelectedGame();
+                              }
+
+                              if (filter.isEmpty) {
+                                return _platformOptions;
+                              }
+
+                              return _platformOptions
+                                  .where(
+                                    (platform) => platform.name
+                                        .toLowerCase()
+                                        .contains(filter.toLowerCase()),
+                                  )
+                                  .toList();
+                            },
+                            itemAsString: (platform) => platform.name,
+                            onSelected: (platform) {
+                              setState(() {
+                                _plataformaValue = platform;
+                              });
+                            },
+                            popupProps: PopupProps.modalBottomSheet(
+                              showSearchBox: true,
+                            ),
+                            dropdownBuilder: (context, selectedItem) {
+                              if (_selectedValue == null) {
+                                return const Text(
+                                  'Selecione um jogo primeiro',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                );
+                              }
+
+                              if (_isLoadingPlatforms) {
+                                return const Text(
+                                  'Carregando plataformas...',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                );
+                              }
+
+                              return Text(
+                                selectedItem?.name ??
+                                    'Selecione uma plataforma',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                              );
+                            },
+                            decoratorProps: const DropDownDecoratorProps(
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: inputColor,
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                            enabled: _selectedValue != null,
+                          ),
+                        ],
+                      ),
                     ),
-                  
+                    const SizedBox(width: 16),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Checkbox(
                           value: _isCompleted,
@@ -887,13 +988,15 @@ class _AddGamePageState extends State<AddGamePage> {
                         ),
                         const Text(
                           'Jogo concluído',
-                          style: TextStyle(color: Colors.white, fontFamily: 'Orbitron'),
-                        )
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Orbitron',
+                          ),
+                        ),
                       ],
                     ),
                   ],
                 ),
-                
 
                 const SizedBox(height: 12),
 
@@ -930,7 +1033,10 @@ class _AddGamePageState extends State<AddGamePage> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               'Início da jogatina',
-                              style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                              style: TextStyle(
+                                color: green,
+                                fontFamily: 'Orbitron',
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -944,7 +1050,10 @@ class _AddGamePageState extends State<AddGamePage> {
                               hintStyle: const TextStyle(color: Colors.white54),
                               filled: true,
                               fillColor: inputColor,
-                              suffixIcon: const Icon(Icons.calendar_today, color: Colors.white70),
+                              suffixIcon: const Icon(
+                                Icons.calendar_today,
+                                color: Colors.white70,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
@@ -963,7 +1072,10 @@ class _AddGamePageState extends State<AddGamePage> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               'Fim da jogatina',
-                              style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                              style: TextStyle(
+                                color: green,
+                                fontFamily: 'Orbitron',
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -977,7 +1089,10 @@ class _AddGamePageState extends State<AddGamePage> {
                               hintStyle: const TextStyle(color: Colors.white54),
                               filled: true,
                               fillColor: inputColor,
-                              suffixIcon: const Icon(Icons.calendar_today, color: Colors.white70),
+                              suffixIcon: const Icon(
+                                Icons.calendar_today,
+                                color: Colors.white70,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
@@ -985,7 +1100,7 @@ class _AddGamePageState extends State<AddGamePage> {
                             ),
                           ),
                         ],
-                      )
+                      ),
                     ),
                   ],
                 ),
@@ -1005,9 +1120,14 @@ class _AddGamePageState extends State<AddGamePage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Salvar', style: TextStyle(color: Colors.white, fontFamily: 'Orbitron')),
+                  child: const Text(
+                    'Salvar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Orbitron',
+                    ),
+                  ),
                 ),
-
               ],
             ),
           ),

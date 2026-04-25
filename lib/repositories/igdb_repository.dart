@@ -22,4 +22,12 @@ class IGDBRepository {
   Future<List<IGDBPlataforma>> popularPlatforms() {
     return service.popularPlatforms();
   }
+
+  Future<List<int>> getPlatformIdsForGame(int gameId) {
+    return service.getPlatformIdsForGame(gameId);
+  }
+
+  Future<List<IGDBPlataforma>> getPlatformsByIds(List<int> ids) {
+    return service.getPlatformsByIds(ids);
+  }
 }
