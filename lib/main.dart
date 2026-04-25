@@ -13,6 +13,7 @@ import '../repositories/userdata_repository.dart';
 import '../service/igdb_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'dart:io';
+import 'service/auth_service.dart';
 
 void main() {
   if (Platform.isWindows) {
@@ -46,8 +47,51 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  final IAuthService authService = AuthServiceMock();
+
+  void _handleLogin() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final result = await authService.login(
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); // fecha loading
+
+      print("Token: ${result['access_token']}");
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+
+      final error = e.toString().replaceAll("Exception: ", "");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,23 +105,16 @@ class LoginPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                'assets/logo.png',
-                height: 100,
-                width: 250,
-                fit: BoxFit.contain,
-              ),
+              Image.asset('assets/logo.png', height: 100, width: 250),
               const SizedBox(height: 24),
 
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  'Email',
-                  style: TextStyle(color: green, fontFamily: 'Orbitron'),
-                ),
+                child: Text('Email', style: TextStyle(color: green)),
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: _emailController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   filled: true,
@@ -91,16 +128,13 @@ class LoginPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // SENHA
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  'Senha',
-                  style: TextStyle(color: green, fontFamily: 'Orbitron'),
-                ),
+                child: Text('Senha', style: TextStyle(color: green)),
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: _passwordController,
                 obscureText: true,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
@@ -115,22 +149,13 @@ class LoginPage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // BOTÃO
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
-                    );
-                  },
+                  onPressed: _handleLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                   ),
                   child: const Text(
                     'Login',
@@ -141,22 +166,19 @@ class LoginPage extends StatelessWidget {
                   ),
                 ),
               ),
+
               const SizedBox(height: 16),
+
               InkWell(
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const AddUserPage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const AddUserPage()),
                   );
                 },
                 child: const Text(
                   'Ou cadastre-se',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontFamily: 'Orbitron',
-                  ),
+                  style: TextStyle(color: Colors.white, fontFamily: 'Orbitron'),
                 ),
               ),
             ],
