@@ -13,6 +13,12 @@ class User {
     required this.dataNascimento,
   });
 
+  static int? _parseInt(Object? value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -25,7 +31,7 @@ class User {
 
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
-      id: map['id'],
+      id: _parseInt(map['id']),
       nome: map['nome'],
       email: map['email'],
       senha: map['senha'],

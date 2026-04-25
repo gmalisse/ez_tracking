@@ -19,6 +19,12 @@ class Gameplay {
     required this.console,
   });
 
+  static int? _parseInt(Object? value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -34,9 +40,9 @@ class Gameplay {
 
   factory Gameplay.fromMap(Map<String, dynamic> map) {
     return Gameplay(
-      id: map['id'],
-      usersId: map['usersId'],
-      jogosId: map['jogosId'],
+      id: _parseInt(map['id']),
+      usersId: _parseInt(map['usersId']) ?? 0,
+      jogosId: _parseInt(map['jogosId']) ?? 0,
       horasJogadas: (map['horasJogadas'] as num).toDouble(),
       dataInicio: DateTime.parse(map['dataInicio']),
       dataFim: map['dataFim'] != null ? DateTime.parse(map['dataFim']) : null,

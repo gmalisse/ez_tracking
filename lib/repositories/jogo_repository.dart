@@ -7,12 +7,12 @@ class JogoRepository {
 
   Future<int> create(Jogo jogo) async {
     final db = await _dbHelper.database;
-    return await db.insert('jogos', jogo.toMap());
+    return await db.insert('jogo', jogo.toMap());
   }
 
   Future<Jogo?> getById(int id) async {
     final db = await _dbHelper.database;
-    final maps = await db.query('jogos', where: 'id = ?', whereArgs: [id]);
+    final maps = await db.query('jogo', where: 'id = ?', whereArgs: [id]);
     if (maps.isNotEmpty) {
       return Jogo.fromMap(maps.first);
     }
@@ -21,7 +21,7 @@ class JogoRepository {
 
   Future<Jogo?> getByName(String nome) async {
     final db = await _dbHelper.database;
-    final maps = await db.query('jogos', where: 'nome = ?', whereArgs: [nome]);
+    final maps = await db.query('jogo', where: 'nome = ?', whereArgs: [nome]);
     if (maps.isNotEmpty) {
       return Jogo.fromMap(maps.first);
     }
@@ -30,14 +30,14 @@ class JogoRepository {
 
   Future<List<Jogo>> getAll() async {
     final db = await _dbHelper.database;
-    final maps = await db.query('jogos');
+    final maps = await db.query('jogo');
     return maps.map((map) => Jogo.fromMap(map)).toList();
   }
 
   Future<int> update(Jogo jogo) async {
     final db = await _dbHelper.database;
     return await db.update(
-      'jogos',
+      'jogo',
       jogo.toMap(),
       where: 'id = ?',
       whereArgs: [jogo.id],
@@ -46,6 +46,6 @@ class JogoRepository {
 
   Future<int> delete(int id) async {
     final db = await _dbHelper.database;
-    return await db.delete('jogos', where: 'id = ?', whereArgs: [id]);
+    return await db.delete('jogo', where: 'id = ?', whereArgs: [id]);
   }
 }

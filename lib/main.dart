@@ -3,12 +3,20 @@ import 'package:ez_tracking/models/igdb_plataforma.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dropdown_search/dropdown_search.dart';
-import '../models/igdb_jogo.dart';
+import '../models/gameplay.dart';
+import '../models/jogo.dart';
+import '../repositories/gameplay_repository.dart';
 import '../repositories/igdb_repository.dart';
 import '../repositories/jogo_repository.dart';
 import '../service/igdb_service.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'dart:io';
 
 void main() {
+  if (Platform.isWindows) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
   runApp(const MyApp());
 }
 
@@ -374,6 +382,34 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final JogoRepository _jogoRepository = JogoRepository();
+  final GameplayRepository _gameplayRepository = GameplayRepository();
+
+  List<Gameplay> _gameplays = [];
+  Map<int, Jogo> _jogosById = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedGameplays();
+  }
+
+  Future<void> _loadSavedGameplays() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final gameplays = await _gameplayRepository.getAll();
+    final jogos = await _jogoRepository.getAll();
+    final jogosMap = {for (var jogo in jogos) jogo.id!: jogo};
+
+    setState(() {
+      _gameplays = gameplays;
+      _jogosById = jogosMap;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -492,44 +528,93 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: Stack(
-        children: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Meus jogos',
-                      style: TextStyle(
-                        color: green,
-                        fontSize: 24,
-                        fontFamily: 'Orbitron',
-                      ),
-                    ),
-                  ),
-                ],
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Meus jogos',
+              style: TextStyle(
+                color: green,
+                fontSize: 24,
+                fontFamily: 'Orbitron',
               ),
             ),
-          ),
-          Positioned(
-            bottom: 24,
-            right: 24,
-            child: FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AddGamePage()),
-                );
-              },
-              backgroundColor: green,
-              child: const Icon(Icons.add, color: Colors.black),
+            const SizedBox(height: 24),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _gameplays.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Nenhuma gameplay salva ainda.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    )
+                  : ListView.separated(
+                      itemCount: _gameplays.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final gameplay = _gameplays[index];
+                        final jogo = _jogosById[gameplay.jogosId];
+                        final title = jogo?.nome ?? 'Jogo desconhecido';
+
+                        return ListTile(
+                          tileColor: const Color(0xFF1E1E1E),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          title: Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Orbitron',
+                              fontSize: 16,
+                            ),
+                          ),
+                          subtitle: Text(
+                            gameplay.console,
+                            style: const TextStyle(color: Colors.white54),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right,
+                            color: Colors.white70,
+                          ),
+                          onTap: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    AddGamePage(gameplay: gameplay, jogo: jogo),
+                              ),
+                            );
+
+                            if (result == true) {
+                              _loadSavedGameplays();
+                            }
+                          },
+                        );
+                      },
+                    ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddGamePage()),
+          );
+
+          if (result == true) {
+            _loadSavedGameplays();
+          }
+        },
+        backgroundColor: green,
+        child: const Icon(Icons.add, color: Colors.black),
       ),
     );
   }
@@ -708,7 +793,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 }
 
 class AddGamePage extends StatefulWidget {
-  const AddGamePage({super.key});
+  final Gameplay? gameplay;
+  final Jogo? jogo;
+
+  const AddGamePage({super.key, this.gameplay, this.jogo});
 
   @override
   State<AddGamePage> createState() => _AddGamePageState();
@@ -724,13 +812,40 @@ class _AddGamePageState extends State<AddGamePage> {
   DateTime? _endDate;
   bool _isCompleted = false;
 
+  @override
+  void initState() {
+    super.initState();
+
+    final gameplay = widget.gameplay;
+    if (gameplay != null) {
+      _selectedValue = IGDBGame(
+        id: gameplay.jogosId,
+        name: widget.jogo?.nome ?? 'Jogo',
+      );
+      _hoursController.text = gameplay.horasJogadas.toString();
+      _startDate = gameplay.dataInicio;
+      _startDateController.text =
+          '${_startDate!.day.toString().padLeft(2, '0')}/${_startDate!.month.toString().padLeft(2, '0')}/${_startDate!.year}';
+      if (gameplay.dataFim != null) {
+        _endDate = gameplay.dataFim;
+        _endDateController.text =
+            '${_endDate!.day.toString().padLeft(2, '0')}/${_endDate!.month.toString().padLeft(2, '0')}/${_endDate!.year}';
+      }
+      _isCompleted = gameplay.zerado;
+      _loadPlatformsForSelectedGame(selectedPlatformName: gameplay.console);
+    }
+  }
+
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
   final TextEditingController _hoursController = TextEditingController();
   final IGDBRepository igdbRepository = IGDBRepository(IGDBService());
   final JogoRepository jogoRepository = JogoRepository();
+  final GameplayRepository gameplayRepository = GameplayRepository();
 
-  Future<void> _loadPlatformsForSelectedGame() async {
+  Future<void> _loadPlatformsForSelectedGame({
+    String? selectedPlatformName,
+  }) async {
     if (_selectedValue?.id == null) return;
 
     setState(() {
@@ -747,6 +862,14 @@ class _AddGamePageState extends State<AddGamePage> {
       final platforms = await igdbRepository.getPlatformsByIds(platformIds);
       setState(() {
         _platformOptions = platforms;
+        if (selectedPlatformName != null) {
+          final match = platforms
+              .where((platform) => platform.name == selectedPlatformName)
+              .toList();
+          if (match.isNotEmpty) {
+            _plataformaValue = match.first;
+          }
+        }
       });
     } catch (_) {
       setState(() {
@@ -820,9 +943,9 @@ class _AddGamePageState extends State<AddGamePage> {
         backgroundColor: const Color(0xFF121212),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.green),
-        title: const Text(
-          'Adicionar jogo',
-          style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
+        title: Text(
+          widget.gameplay != null ? 'Editar jogo' : 'Adicionar jogo',
+          style: const TextStyle(fontFamily: 'Orbitron', color: Colors.green),
         ),
         centerTitle: true,
       ),
@@ -836,167 +959,253 @@ class _AddGamePageState extends State<AddGamePage> {
               children: [
                 const SizedBox(height: 12),
 
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Jogo',
-                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                if (widget.gameplay == null) ...[
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Jogo',
+                      style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                DropdownSearch<IGDBGame>(
-                  compareFn: (a, b) => a.id == b.id,
+                  const SizedBox(height: 8),
+                  DropdownSearch<IGDBGame>(
+                    compareFn: (a, b) => a.id == b.id,
 
-                  items: (filter, loadProps) async {
-                    if (filter.isEmpty) {
-                      return await igdbRepository.popular();
-                    }
-                    return await igdbRepository.search(filter);
-                  },
+                    items: (filter, loadProps) async {
+                      if (filter.isEmpty) {
+                        return await igdbRepository.popular();
+                      }
+                      return await igdbRepository.search(filter);
+                    },
 
-                  itemAsString: (game) => game.name,
+                    itemAsString: (game) => game.name,
 
-                  onSelected: (game) {
-                    setState(() {
-                      _selectedValue = game;
-                      _plataformaValue = null;
-                      _platformOptions = [];
-                      _hasLoadedPlatforms = false;
-                    });
-                    _loadPlatformsForSelectedGame();
-                  },
+                    onSelected: (game) {
+                      setState(() {
+                        _selectedValue = game;
+                        _plataformaValue = null;
+                        _platformOptions = [];
+                        _hasLoadedPlatforms = false;
+                      });
+                      _loadPlatformsForSelectedGame();
+                    },
 
-                  popupProps: PopupProps.modalBottomSheet(showSearchBox: true),
+                    popupProps: PopupProps.modalBottomSheet(
+                      showSearchBox: true,
+                    ),
 
-                  dropdownBuilder: (context, selectedItem) {
-                    return Text(
-                      selectedItem?.name ?? 'Selecione um jogo',
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                    );
-                  },
-                ),
+                    dropdownBuilder: (context, selectedItem) {
+                      return Text(
+                        selectedItem?.name ?? 'Selecione um jogo',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      );
+                    },
+                  ),
 
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'Plataforma',
-                              style: TextStyle(
-                                color: green,
-                                fontFamily: 'Orbitron',
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Plataforma',
+                                style: TextStyle(
+                                  color: green,
+                                  fontFamily: 'Orbitron',
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          DropdownSearch<IGDBPlataforma>(
-                            compareFn: (a, b) => a.id == b.id,
-                            items: (filter, loadProps) async {
-                              if (_selectedValue == null) {
-                                return [];
-                              }
+                            const SizedBox(height: 8),
+                            DropdownSearch<IGDBPlataforma>(
+                              compareFn: (a, b) => a.id == b.id,
+                              items: (filter, loadProps) async {
+                                if (_selectedValue == null) {
+                                  return [];
+                                }
 
-                              if (!_hasLoadedPlatforms &&
-                                  !_isLoadingPlatforms) {
-                                await _loadPlatformsForSelectedGame();
-                              }
+                                if (!_hasLoadedPlatforms &&
+                                    !_isLoadingPlatforms) {
+                                  await _loadPlatformsForSelectedGame();
+                                }
 
-                              if (filter.isEmpty) {
-                                return _platformOptions;
-                              }
+                                if (filter.isEmpty) {
+                                  return _platformOptions;
+                                }
 
-                              return _platformOptions
-                                  .where(
-                                    (platform) => platform.name
-                                        .toLowerCase()
-                                        .contains(filter.toLowerCase()),
-                                  )
-                                  .toList();
-                            },
-                            itemAsString: (platform) => platform.name,
-                            onSelected: (platform) {
+                                return _platformOptions
+                                    .where(
+                                      (platform) => platform.name
+                                          .toLowerCase()
+                                          .contains(filter.toLowerCase()),
+                                    )
+                                    .toList();
+                              },
+                              itemAsString: (platform) => platform.name,
+                              onSelected: (platform) {
+                                setState(() {
+                                  _plataformaValue = platform;
+                                });
+                              },
+                              popupProps: PopupProps.modalBottomSheet(
+                                showSearchBox: true,
+                              ),
+                              dropdownBuilder: (context, selectedItem) {
+                                if (_selectedValue == null) {
+                                  return const Text(
+                                    'Selecione um jogo primeiro',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  );
+                                }
+
+                                if (_isLoadingPlatforms) {
+                                  return const Text(
+                                    'Carregando plataformas...',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  );
+                                }
+
+                                return Text(
+                                  selectedItem?.name ??
+                                      'Selecione uma plataforma',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                );
+                              },
+                              decoratorProps: const DropDownDecoratorProps(
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: inputColor,
+                                  border: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                              ),
+                              enabled: _selectedValue != null,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox(
+                            value: _isCompleted,
+                            activeColor: green,
+                            onChanged: (value) {
                               setState(() {
-                                _plataformaValue = platform;
+                                _isCompleted = value!;
                               });
                             },
-                            popupProps: PopupProps.modalBottomSheet(
-                              showSearchBox: true,
+                          ),
+                          const Text(
+                            'Jogo concluído',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Orbitron',
                             ),
-                            dropdownBuilder: (context, selectedItem) {
-                              if (_selectedValue == null) {
-                                return const Text(
-                                  'Selecione um jogo primeiro',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                );
-                              }
-
-                              if (_isLoadingPlatforms) {
-                                return const Text(
-                                  'Carregando plataformas...',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                );
-                              }
-
-                              return Text(
-                                selectedItem?.name ??
-                                    'Selecione uma plataforma',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                ),
-                              );
-                            },
-                            decoratorProps: const DropDownDecoratorProps(
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: inputColor,
-                                border: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                            ),
-                            enabled: _selectedValue != null,
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ] else ...[
+                  // Modo edição: mostrar jogo e plataforma como texto
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: inputColor,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(width: 16),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Checkbox(
-                          value: _isCompleted,
-                          activeColor: green,
-                          onChanged: (value) {
-                            setState(() {
-                              _isCompleted = value!;
-                            });
-                          },
-                        ),
                         const Text(
-                          'Jogo concluído',
+                          'Jogo',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: green,
                             fontFamily: 'Orbitron',
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.jogo?.nome ?? 'Jogo',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Plataforma',
+                                    style: TextStyle(
+                                      color: green,
+                                      fontFamily: 'Orbitron',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    widget.gameplay?.console ?? 'Plataforma',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Checkbox(
+                                  value: _isCompleted,
+                                  activeColor: green,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isCompleted = value!;
+                                    });
+                                  },
+                                ),
+                                const Text(
+                                  'Jogo concluído',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'Orbitron',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
 
                 const SizedBox(height: 12),
 
@@ -1107,11 +1316,87 @@ class _AddGamePageState extends State<AddGamePage> {
 
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
+                  onPressed: () async {
+                    if (widget.gameplay == null) {
+                      // Modo adicionar: validar jogo e plataforma
+                      if (_selectedValue == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Selecione um jogo.')),
+                        );
+                        return;
+                      }
+
+                      if (_plataformaValue == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Selecione uma plataforma.'),
+                          ),
+                        );
+                        return;
+                      }
+                    }
+
+                    if (_startDate == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Selecione a data de início.'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    final selectedGame = widget.gameplay != null
+                        ? IGDBGame(
+                            id: widget.gameplay!.jogosId,
+                            name: widget.jogo!.nome,
+                          )
+                        : _selectedValue!;
+                    final selectedPlatform = widget.gameplay != null
+                        ? IGDBPlataforma(id: 0, name: widget.gameplay!.console)
+                        : _plataformaValue!;
+
+                    final jogo = Jogo(
+                      id: selectedGame.id,
+                      nome: selectedGame.name,
                     );
+
+                    final existingJogo = await jogoRepository.getById(
+                      selectedGame.id!,
+                    );
+                    if (existingJogo == null) {
+                      await jogoRepository.create(jogo);
+                    }
+
+                    final gameplay = Gameplay(
+                      id:
+                          widget.gameplay?.id ??
+                          DateTime.now().millisecondsSinceEpoch,
+                      usersId: 1,
+                      jogosId: selectedGame.id!,
+                      horasJogadas:
+                          double.tryParse(
+                            _hoursController.text.replaceAll(',', '.'),
+                          ) ??
+                          0.0,
+                      dataInicio: _startDate!,
+                      dataFim: _endDate,
+                      zerado: _isCompleted,
+                      console: selectedPlatform.name,
+                    );
+
+                    if (widget.gameplay != null) {
+                      await gameplayRepository.update(gameplay);
+                    } else {
+                      await gameplayRepository.create(gameplay);
+                    }
+
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Gameplay salva com sucesso.'),
+                      ),
+                    );
+                    Navigator.pop(context, true);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
