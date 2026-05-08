@@ -3,24 +3,70 @@ import 'package:http/http.dart' as http;
 
 abstract class IAuthService {
   Future<Map<String, dynamic>> login(String username, String password);
+  Future<Map<String, dynamic>> register(
+    String name,
+    String surname,
+    String login,
+    String email,
+    String password,
+  );
 }
 
 class AuthService implements IAuthService {
-  final String baseUrl = "http://10.0.2.2:8085/api/auth/login";
+  final String loginUrl =
+      "https://mobile-ios-login.zani0x03.eti.br/api/auth/login";
+  final String registerUrl =
+      "https://mobile-ios-login.zani0x03.eti.br/api/register";
 
   @override
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
       final response = await http.post(
-        Uri.parse(baseUrl),
+        Uri.parse(loginUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"username": username, "password": password}),
+        body: jsonEncode({
+          "username": username,
+          "password": password,
+          "sistemaId": "f1f78c83-e114-462b-b7e3-ac38bbb9eddc",
+        }),
       );
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
         throw Exception("Falha no login: ${response.statusCode}");
+      }
+    } catch (e) {
+      throw Exception("Erro de conexão: $e");
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> register(
+    String name,
+    String surname,
+    String login,
+    String email,
+    String password,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse(registerUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "name": name,
+          "surname": surname,
+          "login": login,
+          "email": email,
+          "password": password,
+          "sistemaId": "f1f78c83-e114-462b-b7e3-ac38bbb9eddc",
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception("Falha no registro: ${response.statusCode} ${response.body}");
       }
     } catch (e) {
       throw Exception("Erro de conexão: $e");
@@ -49,5 +95,24 @@ class AuthServiceMock implements IAuthService {
     } else {
       throw Exception("Usuário ou senha inválidos (Mock)");
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> register(
+    String name,
+    String surname,
+    String login,
+    String email,
+    String password,
+  ) async {
+    await Future.delayed(const Duration(seconds: 1));
+
+    return {
+      "id": 1,
+      "name": name,
+      "surname": surname,
+      "login": login,
+      "email": email,
+    };
   }
 }

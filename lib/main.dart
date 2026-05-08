@@ -55,10 +55,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  final IAuthService authService = AuthServiceMock();
+  final IAuthService authService = AuthService();
 
   void _handleLogin() async {
     showDialog(
@@ -69,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final result = await authService.login(
-        _emailController.text,
+        _usernameController.text,
         _passwordController.text,
       );
 
@@ -110,11 +110,11 @@ class _LoginPageState extends State<LoginPage> {
 
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Email', style: TextStyle(color: green)),
+                child: Text('Nome de usuário', style: TextStyle(color: green)),
               ),
               const SizedBox(height: 8),
               TextField(
-                controller: _emailController,
+                controller: _usernameController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   filled: true,
@@ -197,46 +197,63 @@ class AddUserPage extends StatefulWidget {
 }
 
 class _AddUserPageState extends State<AddUserPage> {
-  DateTime? _selectedDate;
-  final TextEditingController _dateController = TextEditingController();
-
-  Future<void> _selectDate(BuildContext context) async {
-    final now = DateTime.now();
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      locale: const Locale('pt', 'BR'),
-      initialDate: _selectedDate ?? DateTime(now.year - 18),
-      firstDate: DateTime(1900),
-      lastDate: now,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF12964A),
-              onPrimary: Colors.white,
-              surface: Color(0xFF1E1E1E),
-              onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: const Color(0xFF121212),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-        _dateController.text =
-            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
-      });
-    }
-  }
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
 
   @override
   void dispose() {
-    _dateController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _registerUser() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final result = await _authService.register(
+        _firstNameController.text.trim(),
+        _lastNameController.text.trim(),
+        _usernameController.text.trim(),
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cadastro realizado com sucesso.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro no cadastro: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -275,6 +292,53 @@ class _AddUserPageState extends State<AddUserPage> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
+                  controller: _firstNameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: inputColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Sobrenome',
+                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _lastNameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: inputColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Nome de usuário',
+                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _usernameController,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     filled: true,
@@ -297,6 +361,8 @@ class _AddUserPageState extends State<AddUserPage> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     filled: true,
@@ -319,6 +385,7 @@ class _AddUserPageState extends State<AddUserPage> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
+                  controller: _passwordController,
                   obscureText: true,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
@@ -331,48 +398,10 @@ class _AddUserPageState extends State<AddUserPage> {
                   ),
                 ),
 
-                const SizedBox(height: 12),
-
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Data de Nascimento',
-                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _dateController,
-                  readOnly: true,
-                  style: const TextStyle(color: Colors.white),
-                  onTap: () => _selectDate(context),
-                  decoration: InputDecoration(
-                    hintText: 'Selecione a data',
-                    hintStyle: const TextStyle(color: Colors.white54),
-                    filled: true,
-                    fillColor: inputColor,
-                    suffixIcon: const Icon(
-                      Icons.calendar_today,
-                      color: Colors.white70,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-
                 const SizedBox(height: 20),
 
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
-                      ),
-                    );
-                  },
+                  onPressed: _registerUser,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
                     padding: const EdgeInsets.symmetric(vertical: 16),
