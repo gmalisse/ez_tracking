@@ -3,6 +3,7 @@ import 'package:ez_tracking/models/igdb_plataforma.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:provider/provider.dart';
 import '../models/gameplay.dart';
 import '../models/jogo.dart';
 import '../models/userdata.dart';
@@ -14,6 +15,7 @@ import '../service/igdb_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'dart:io';
 import 'service/auth_service.dart';
+import 'providers/auth_provider.dart';
 
 void main() {
   if (Platform.isWindows) {
@@ -28,21 +30,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Login',
-      debugShowCheckedModeBanner: false,
-      locale: const Locale('pt', 'BR'),
-      localizationsDelegates: [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('pt', 'BR')],
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF121212), // fundo
+    return MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
+      child: MaterialApp(
+        title: 'Login',
+        debugShowCheckedModeBanner: false,
+        locale: const Locale('pt', 'BR'),
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('pt', 'BR')],
+        theme: ThemeData(
+          useMaterial3: true,
+          scaffoldBackgroundColor: const Color(0xFF121212), // fundo
+        ),
+        home: const LoginPage(),
       ),
-      home: const LoginPage(),
     );
   }
 }
@@ -58,9 +63,19 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  final IAuthService authService = AuthService();
-
   void _handleLogin() async {
+    final authProvider = context.read<AuthProvider>();
+
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preencha usuário e senha'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -68,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     try {
-      final result = await authService.login(
+      final success = await authProvider.login(
         _usernameController.text,
         _passwordController.text,
       );
@@ -76,19 +91,26 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       Navigator.pop(context); // fecha loading
 
-      print("Token: ${result['access_token']}");
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
+      if (success) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Erro no login'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) Navigator.pop(context);
-
-      final error = e.toString().replaceAll("Exception: ", "");
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(e.toString().replaceAll("Exception: ", "")),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -202,7 +224,6 @@ class _AddUserPageState extends State<AddUserPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
 
   @override
   void dispose() {
@@ -215,6 +236,20 @@ class _AddUserPageState extends State<AddUserPage> {
   }
 
   Future<void> _registerUser() async {
+    final authProvider = context.read<AuthProvider>();
+
+    if (_firstNameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preencha todos os campos obrigatórios'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -222,28 +257,42 @@ class _AddUserPageState extends State<AddUserPage> {
     );
 
     try {
-      final result = await _authService.register(
-        _firstNameController.text.trim(),
-        _lastNameController.text.trim(),
-        _usernameController.text.trim(),
-        _emailController.text.trim(),
-        _passwordController.text,
+      final success = await authProvider.register(
+        name: _firstNameController.text.trim(),
+        surname: _lastNameController.text.trim(),
+        login: _usernameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
 
       if (!mounted) return;
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Cadastro realizado com sucesso.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cadastro realizado com sucesso! Redirecionando...'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
+        // Aguarda um pouco antes de voltar para o login
+        await Future.delayed(const Duration(seconds: 2));
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro no cadastro: ${authProvider.error}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
@@ -262,6 +311,17 @@ class _AddUserPageState extends State<AddUserPage> {
     const inputColor = Color(0xFF1E1E1E);
 
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF121212),
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.green),
+        title: const Text(
+          'Cadastro',
+          style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
+        ),
+        centerTitle: true,
+      ),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -270,10 +330,10 @@ class _AddUserPageState extends State<AddUserPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Cadastro de Usuário',
+                const Text(
+                  'Crie sua conta',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: green,
@@ -449,11 +509,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadSavedGameplays() async {
+    final authProvider = context.read<AuthProvider>();
+    final currentUserId = authProvider.user?.id ?? 1;
+
     setState(() {
       _isLoading = true;
     });
 
-    final gameplays = await _gameplayRepository.getAll();
+    final gameplays = await _gameplayRepository.getByUserId(currentUserId);
     final jogos = await _jogoRepository.getAll();
     final jogosMap = {for (var jogo in jogos) jogo.id!: jogo};
 
@@ -553,7 +616,9 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  final authProvider = context.read<AuthProvider>();
+                  await authProvider.logout();
                   Navigator.pop(context);
                   Navigator.pushAndRemoveUntil(
                     context,
@@ -684,7 +749,6 @@ class _ProfilePageState extends State<ProfilePage> {
   final GameplayRepository _gameplayRepository = GameplayRepository();
   final JogoRepository _jogoRepository = JogoRepository();
   final UserDataRepository _userDataRepository = UserDataRepository();
-  final int _currentUserId = 1;
 
   bool _isLoading = true;
   int _jogosJogados = 0;
@@ -699,7 +763,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserProfile() async {
-    final gameplays = await _gameplayRepository.getByUserId(_currentUserId);
+    final authProvider = context.read<AuthProvider>();
+    final currentUserId = authProvider.user?.id ?? 1;
+
+    final gameplays = await _gameplayRepository.getByUserId(currentUserId);
     final jogos = await _jogoRepository.getAll();
     final jogosMap = {for (var jogo in jogos) jogo.id!: jogo};
 
@@ -735,8 +802,8 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     final userData = UserData(
-      id: _currentUserId,
-      userId: _currentUserId,
+      id: currentUserId,
+      userId: currentUserId,
       jogosJogados: jogosJogados,
       totalHoras: totalHoras,
       generoFavorito: generoFavorito,
@@ -744,7 +811,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     final existingUserData = await _userDataRepository.getByUserId(
-      _currentUserId,
+      currentUserId,
     );
     if (existingUserData == null) {
       await _userDataRepository.create(userData);
@@ -765,6 +832,8 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     const green = Color(0xFF12964A);
+    final authProvider = context.watch<AuthProvider>();
+    final userName = authProvider.user?.nome ?? 'Usuário';
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
@@ -806,9 +875,9 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Nome do Usuário',
-              style: TextStyle(
+            Text(
+              userName,
+              style: const TextStyle(
                 color: Colors.white,
                 fontFamily: 'Orbitron',
                 fontSize: 24,
@@ -1464,6 +1533,9 @@ class _AddGamePageState extends State<AddGamePage> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
+                    final authProvider = context.read<AuthProvider>();
+                    final currentUserId = authProvider.user?.id ?? 1;
+
                     if (widget.gameplay == null) {
                       // Modo adicionar: validar jogo e plataforma
                       if (_selectedValue == null) {
@@ -1518,7 +1590,7 @@ class _AddGamePageState extends State<AddGamePage> {
                       id:
                           widget.gameplay?.id ??
                           DateTime.now().millisecondsSinceEpoch,
-                      usersId: 1,
+                      usersId: currentUserId,
                       jogosId: selectedGame.id!,
                       horasJogadas:
                           double.tryParse(

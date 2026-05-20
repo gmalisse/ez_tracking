@@ -50,23 +50,45 @@ class AuthService implements IAuthService {
     String password,
   ) async {
     try {
+      final body = {
+        "name": name,
+        "surname": surname,
+        "login": login,
+        "email": email,
+        "password": password,
+        "sistemaId": "f1f78c83-e114-462b-b7e3-ac38bbb9eddc",
+      };
+
+      print("DEBUG - Enviando para registro: $body");
+
       final response = await http.post(
         Uri.parse(registerUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "name": name,
-          "surname": surname,
-          "login": login,
-          "email": email,
-          "password": password,
-          "sistemaId": "f1f78c83-e114-462b-b7e3-ac38bbb9eddc",
-        }),
+        body: jsonEncode(body),
       );
 
+      print("DEBUG - Status code: ${response.statusCode}");
+      print("DEBUG - Response body: ${response.body}");
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body);
+        // Tenta decodificar como JSON
+        try {
+          return jsonDecode(response.body);
+        } catch (e) {
+          // Se falhar, retorna um objeto simples indicando sucesso
+          print("DEBUG - Resposta não é JSON válido, retornando sucesso");
+          return {
+            "success": true,
+            "message": response.body,
+            "name": name,
+            "email": email,
+          };
+        }
       } else {
-        throw Exception("Falha no registro: ${response.statusCode} ${response.body}");
+        final errorBody = response.body;
+        throw Exception(
+          "Falha no registro: ${response.statusCode}\n$errorBody",
+        );
       }
     } catch (e) {
       throw Exception("Erro de conexão: $e");

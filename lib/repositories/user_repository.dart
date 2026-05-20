@@ -7,12 +7,12 @@ class UserRepository {
 
   Future<int> create(User user) async {
     final db = await _dbHelper.database;
-    return await db.insert('users', user.toMap());
+    return await db.insert('user', user.toMap());
   }
 
   Future<User?> getById(int id) async {
     final db = await _dbHelper.database;
-    final maps = await db.query('users', where: 'id = ?', whereArgs: [id]);
+    final maps = await db.query('user', where: 'id = ?', whereArgs: [id.toString()]);
     if (maps.isNotEmpty) {
       return User.fromMap(maps.first);
     }
@@ -22,7 +22,7 @@ class UserRepository {
   Future<User?> getByEmail(String email) async {
     final db = await _dbHelper.database;
     final maps = await db.query(
-      'users',
+      'user',
       where: 'email = ?',
       whereArgs: [email],
     );
@@ -34,22 +34,22 @@ class UserRepository {
 
   Future<List<User>> getAll() async {
     final db = await _dbHelper.database;
-    final maps = await db.query('users');
+    final maps = await db.query('user');
     return maps.map((map) => User.fromMap(map)).toList();
   }
 
   Future<int> update(User user) async {
     final db = await _dbHelper.database;
     return await db.update(
-      'users',
+      'user',
       user.toMap(),
       where: 'id = ?',
-      whereArgs: [user.id],
+      whereArgs: [user.id?.toString()],
     );
   }
 
   Future<int> delete(int id) async {
     final db = await _dbHelper.database;
-    return await db.delete('users', where: 'id = ?', whereArgs: [id]);
+    return await db.delete('user', where: 'id = ?', whereArgs: [id.toString()]);
   }
 }
