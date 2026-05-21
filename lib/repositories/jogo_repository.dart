@@ -12,7 +12,11 @@ class JogoRepository {
 
   Future<Jogo?> getById(int id) async {
     final db = await _dbHelper.database;
-    final maps = await db.query('jogo', where: 'id = ?', whereArgs: [id]);
+    final maps = await db.query(
+      'jogo',
+      where: 'id = ?',
+      whereArgs: [id.toString()],
+    );
     if (maps.isNotEmpty) {
       return Jogo.fromMap(maps.first);
     }
@@ -40,12 +44,12 @@ class JogoRepository {
       'jogo',
       jogo.toMap(),
       where: 'id = ?',
-      whereArgs: [jogo.id],
+      whereArgs: [jogo.id?.toString()],
     );
   }
 
   Future<int> delete(int id) async {
     final db = await _dbHelper.database;
-    return await db.delete('jogo', where: 'id = ?', whereArgs: [id]);
+    return await db.delete('jogo', where: 'id = ?', whereArgs: [id.toString()]);
   }
 }

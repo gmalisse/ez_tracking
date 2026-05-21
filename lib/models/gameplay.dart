@@ -27,9 +27,9 @@ class Gameplay {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'usersId': usersId,
-      'jogosId': jogosId,
+      'id': id?.toString(),
+      'usersId': usersId.toString(),
+      'jogosId': jogosId.toString(),
       'horasJogadas': horasJogadas,
       'dataInicio': dataInicio.toIso8601String(),
       'dataFim': dataFim?.toIso8601String(),

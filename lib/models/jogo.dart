@@ -5,7 +5,7 @@ class Jogo {
   Jogo({this.id, required this.nome});
 
   Map<String, dynamic> toMap() {
-    return {'id': id, 'nome': nome};
+    return {'id': id?.toString(), 'nome': nome};
   }
 
   static int? _parseInt(Object? value) {

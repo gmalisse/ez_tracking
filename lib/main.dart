@@ -16,12 +16,14 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'dart:io';
 import 'service/auth_service.dart';
 import 'providers/auth_provider.dart';
+import 'providers/gameplay_provider.dart';
 
 void main() {
   if (Platform.isWindows) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
+  print('[main] starting app');
   runApp(const MyApp());
 }
 
@@ -30,8 +32,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('[MyApp] build()');
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => GameplayProvider()),
+      ],
       child: MaterialApp(
         title: 'Login',
         debugShowCheckedModeBanner: false,
@@ -496,40 +502,50 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final JogoRepository _jogoRepository = JogoRepository();
-  final GameplayRepository _gameplayRepository = GameplayRepository();
-
-  List<Gameplay> _gameplays = [];
   Map<int, Jogo> _jogosById = {};
-  bool _isLoading = true;
+  int? _loadedUserId;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedGameplays();
+    // Carrega jogos uma única vez
+    _loadJogos();
   }
 
-  Future<void> _loadSavedGameplays() async {
-    final authProvider = context.read<AuthProvider>();
-    final currentUserId = authProvider.user?.id ?? 1;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    final gameplays = await _gameplayRepository.getByUserId(currentUserId);
+  Future<void> _loadJogos() async {
     final jogos = await _jogoRepository.getAll();
     final jogosMap = {for (var jogo in jogos) jogo.id!: jogo};
-
     setState(() {
-      _gameplays = gameplays;
       _jogosById = jogosMap;
-      _isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     const green = Color(0xFF12964A);
+
+    // Watch do authProvider para pegar userId
+    final authProvider = context.watch<AuthProvider>();
+    final gameplayProvider = context.watch<GameplayProvider>();
+
+    final currentUserId = authProvider.user?.id;
+
+    // Se não tem usuário, não carrega gameplays
+    if (currentUserId == null) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Carregar gameplays **uma vez por usuário** para evitar loop infinito
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print(
+        '[HomePage] addPostFrameCallback currentUserId=$currentUserId loadedUserId=$_loadedUserId',
+      );
+      if (currentUserId != null && _loadedUserId != currentUserId) {
+        _loadedUserId = currentUserId;
+        print('[HomePage] calling loadUserGameplays for userId=$currentUserId');
+        gameplayProvider.loadUserGameplays(currentUserId);
+      }
+    });
 
     return Scaffold(
       key: _scaffoldKey,
@@ -661,61 +677,75 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _gameplays.isEmpty
-                  ? const Center(
+              child: Consumer<GameplayProvider>(
+                builder: (context, gameplayProvider, _) {
+                  if (gameplayProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (gameplayProvider.gameplays.isEmpty) {
+                    return const Center(
                       child: Text(
                         'Nenhuma gameplay salva ainda.',
                         style: TextStyle(color: Colors.white70),
                       ),
-                    )
-                  : ListView.separated(
-                      itemCount: _gameplays.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final gameplay = _gameplays[index];
-                        final jogo = _jogosById[gameplay.jogosId];
-                        final title = jogo?.nome ?? 'Jogo desconhecido';
+                    );
+                  }
 
-                        return ListTile(
-                          tileColor: const Color(0xFF1E1E1E),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                  return ListView.separated(
+                    itemCount: gameplayProvider.gameplays.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final gameplay = gameplayProvider.gameplays[index];
+                      final jogo = _jogosById[gameplay.jogosId];
+                      final title = jogo?.nome ?? 'Jogo desconhecido';
+
+                      return ListTile(
+                        tileColor: const Color(0xFF1E1E1E),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Orbitron',
+                            fontSize: 16,
                           ),
-                          title: Text(
-                            title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontFamily: 'Orbitron',
-                              fontSize: 16,
+                        ),
+                        subtitle: Text(
+                          gameplay.console,
+                          style: const TextStyle(color: Colors.white54),
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.white70,
+                        ),
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  AddGamePage(gameplay: gameplay, jogo: jogo),
                             ),
-                          ),
-                          subtitle: Text(
-                            gameplay.console,
-                            style: const TextStyle(color: Colors.white54),
-                          ),
-                          trailing: const Icon(
-                            Icons.chevron_right,
-                            color: Colors.white70,
-                          ),
-                          onTap: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AddGamePage(gameplay: gameplay, jogo: jogo),
-                              ),
-                            );
+                          );
 
-                            if (result == true) {
-                              _loadSavedGameplays();
+                          if (result == true) {
+                            final gameplayProvider = context
+                                .read<GameplayProvider>();
+                            final authProvider = context.read<AuthProvider>();
+                            final userId = authProvider.user?.id;
+                            if (userId != null) {
+                              await gameplayProvider.loadUserGameplays(userId);
                             }
-                          },
-                        );
-                      },
-                    ),
+                          }
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -728,7 +758,12 @@ class _HomePageState extends State<HomePage> {
           );
 
           if (result == true) {
-            _loadSavedGameplays();
+            final gameplayProvider = context.read<GameplayProvider>();
+            final authProvider = context.read<AuthProvider>();
+            final userId = authProvider.user?.id;
+            if (userId != null) {
+              await gameplayProvider.loadUserGameplays(userId);
+            }
           }
         },
         backgroundColor: green,
@@ -746,29 +781,33 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final GameplayRepository _gameplayRepository = GameplayRepository();
   final JogoRepository _jogoRepository = JogoRepository();
   final UserDataRepository _userDataRepository = UserDataRepository();
-
-  bool _isLoading = true;
-  int _jogosJogados = 0;
-  double _totalHoras = 0.0;
-  String _generoFavorito = 'Não definido';
-  String _jogoMaisHoras = 'Nenhum';
+  Map<int, Jogo> _jogosById = {};
+  int? _loadedUserId;
 
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
+    _loadJogos();
   }
 
-  Future<void> _loadUserProfile() async {
-    final authProvider = context.read<AuthProvider>();
-    final currentUserId = authProvider.user?.id ?? 1;
-
-    final gameplays = await _gameplayRepository.getByUserId(currentUserId);
+  Future<void> _loadJogos() async {
     final jogos = await _jogoRepository.getAll();
     final jogosMap = {for (var jogo in jogos) jogo.id!: jogo};
+    setState(() {
+      _jogosById = jogosMap;
+    });
+  }
+
+  Future<void> _updateUserProfile() async {
+    final authProvider = context.read<AuthProvider>();
+    final gameplayProvider = context.read<GameplayProvider>();
+    final currentUserId = authProvider.user?.id;
+
+    if (currentUserId == null) return;
+
+    final gameplays = gameplayProvider.gameplays;
 
     final jogosJogados = gameplays.map((g) => g.jogosId).toSet().length;
     final totalHoras = gameplays.fold<double>(
@@ -798,7 +837,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final best = hoursByJogo.entries.reduce(
         (a, b) => a.value >= b.value ? a : b,
       );
-      jogoMaisHoras = jogosMap[best.key]?.nome ?? 'Jogo desconhecido';
+      jogoMaisHoras = _jogosById[best.key]?.nome ?? 'Jogo desconhecido';
     }
 
     final userData = UserData(
@@ -818,22 +857,64 @@ class _ProfilePageState extends State<ProfilePage> {
     } else {
       await _userDataRepository.update(userData);
     }
-
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-      _jogosJogados = jogosJogados;
-      _totalHoras = totalHoras;
-      _generoFavorito = generoFavorito;
-      _jogoMaisHoras = jogoMaisHoras;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     const green = Color(0xFF12964A);
     final authProvider = context.watch<AuthProvider>();
+    final gameplayProvider = context.watch<GameplayProvider>();
     final userName = authProvider.user?.nome ?? 'Usuário';
+    final currentUserId = authProvider.user?.id;
+
+    // Carregar gameplays e atualizar perfil apenas uma vez por usuário
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print(
+        '[ProfilePage] addPostFrameCallback currentUserId=$currentUserId loadedUserId=$_loadedUserId',
+      );
+      if (currentUserId != null && _loadedUserId != currentUserId) {
+        _loadedUserId = currentUserId;
+        print(
+          '[ProfilePage] triggering loadUserGameplays and updateUserProfile for userId=$currentUserId',
+        );
+        if (gameplayProvider.gameplays.isEmpty && !gameplayProvider.isLoading) {
+          gameplayProvider.loadUserGameplays(currentUserId);
+        }
+        _updateUserProfile();
+      }
+    });
+
+    final gameplays = gameplayProvider.gameplays;
+    final jogosJogados = gameplays.map((g) => g.jogosId).toSet().length;
+    final totalHoras = gameplays.fold<double>(
+      0.0,
+      (sum, g) => sum + g.horasJogadas,
+    );
+
+    String generoFavorito = 'Não definido';
+    if (gameplays.isNotEmpty) {
+      final consoleCount = <String, int>{};
+      for (final gameplay in gameplays) {
+        consoleCount[gameplay.console] =
+            (consoleCount[gameplay.console] ?? 0) + 1;
+      }
+      generoFavorito = consoleCount.entries
+          .reduce((a, b) => a.value >= b.value ? a : b)
+          .key;
+    }
+
+    String jogoMaisHoras = 'Nenhum';
+    if (gameplays.isNotEmpty) {
+      final hoursByJogo = <int, double>{};
+      for (final gameplay in gameplays) {
+        hoursByJogo[gameplay.jogosId] =
+            (hoursByJogo[gameplay.jogosId] ?? 0.0) + gameplay.horasJogadas;
+      }
+      final best = hoursByJogo.entries.reduce(
+        (a, b) => a.value >= b.value ? a : b,
+      );
+      jogoMaisHoras = _jogosById[best.key]?.nome ?? 'Jogo desconhecido';
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
@@ -885,17 +966,17 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 24),
-            if (_isLoading)
+            if (gameplayProvider.isLoading)
               const Center(child: CircularProgressIndicator())
             else ...[
-              _profileStat('Jogos jogados', '$_jogosJogados', green),
+              _profileStat('Jogos jogados', '$jogosJogados', green),
               _profileStat(
                 'Total de horas',
-                _totalHoras.toStringAsFixed(1),
+                totalHoras.toStringAsFixed(1),
                 green,
               ),
-              _profileStat('Console favorito', _generoFavorito, green),
-              _profileStat('Jogo com mais horas', _jogoMaisHoras, green),
+              _profileStat('Console favorito', generoFavorito, green),
+              _profileStat('Jogo com mais horas', jogoMaisHoras, green),
             ],
           ],
         ),
@@ -1057,7 +1138,6 @@ class _AddGamePageState extends State<AddGamePage> {
   final TextEditingController _hoursController = TextEditingController();
   final IGDBRepository igdbRepository = IGDBRepository(IGDBService());
   final JogoRepository jogoRepository = JogoRepository();
-  final GameplayRepository gameplayRepository = GameplayRepository();
 
   Future<void> _loadPlatformsForSelectedGame({
     String? selectedPlatformName,
@@ -1603,19 +1683,31 @@ class _AddGamePageState extends State<AddGamePage> {
                       console: selectedPlatform.name,
                     );
 
-                    if (widget.gameplay != null) {
-                      await gameplayRepository.update(gameplay);
-                    } else {
-                      await gameplayRepository.create(gameplay);
-                    }
+                    final gameplayProvider = context.read<GameplayProvider>();
 
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Gameplay salva com sucesso.'),
-                      ),
-                    );
-                    Navigator.pop(context, true);
+                    try {
+                      if (widget.gameplay != null) {
+                        await gameplayProvider.updateGameplay(gameplay);
+                      } else {
+                        await gameplayProvider.createGameplay(gameplay);
+                      }
+
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Gameplay salva com sucesso.'),
+                        ),
+                      );
+                      Navigator.pop(context, true);
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erro ao salvar gameplay: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,

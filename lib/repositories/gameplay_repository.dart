@@ -12,7 +12,11 @@ class GameplayRepository {
 
   Future<Gameplay?> getById(int id) async {
     final db = await _dbHelper.database;
-    final maps = await db.query('gameplay', where: 'id = ?', whereArgs: [id]);
+    final maps = await db.query(
+      'gameplay',
+      where: 'id = ?',
+      whereArgs: [id.toString()],
+    );
     if (maps.isNotEmpty) {
       return Gameplay.fromMap(maps.first);
     }
@@ -30,7 +34,7 @@ class GameplayRepository {
     final maps = await db.query(
       'gameplay',
       where: 'usersId = ?',
-      whereArgs: [usersId],
+      whereArgs: [usersId.toString()],
     );
     return maps.map((map) => Gameplay.fromMap(map)).toList();
   }
@@ -40,7 +44,7 @@ class GameplayRepository {
     final maps = await db.query(
       'gameplay',
       where: 'jogosId = ?',
-      whereArgs: [jogosId],
+      whereArgs: [jogosId.toString()],
     );
     return maps.map((map) => Gameplay.fromMap(map)).toList();
   }
@@ -51,12 +55,16 @@ class GameplayRepository {
       'gameplay',
       gameplay.toMap(),
       where: 'id = ?',
-      whereArgs: [gameplay.id],
+      whereArgs: [gameplay.id?.toString()],
     );
   }
 
   Future<int> delete(int id) async {
     final db = await _dbHelper.database;
-    return await db.delete('gameplay', where: 'id = ?', whereArgs: [id]);
+    return await db.delete(
+      'gameplay',
+      where: 'id = ?',
+      whereArgs: [id.toString()],
+    );
   }
 }

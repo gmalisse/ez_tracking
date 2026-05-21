@@ -12,7 +12,11 @@ class UserRepository {
 
   Future<User?> getById(int id) async {
     final db = await _dbHelper.database;
-    final maps = await db.query('user', where: 'id = ?', whereArgs: [id.toString()]);
+    final maps = await db.query(
+      'user',
+      where: 'id = ?',
+      whereArgs: [id.toString()],
+    );
     if (maps.isNotEmpty) {
       return User.fromMap(maps.first);
     }
@@ -21,11 +25,7 @@ class UserRepository {
 
   Future<User?> getByEmail(String email) async {
     final db = await _dbHelper.database;
-    final maps = await db.query(
-      'user',
-      where: 'email = ?',
-      whereArgs: [email],
-    );
+    final maps = await db.query('user', where: 'email = ?', whereArgs: [email]);
     if (maps.isNotEmpty) {
       return User.fromMap(maps.first);
     }

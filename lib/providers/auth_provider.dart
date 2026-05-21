@@ -21,19 +21,24 @@ class AuthProvider extends ChangeNotifier {
 
   // Inicializar ao criar o provider
   AuthProvider() {
+    print('[AuthProvider] constructor');
     _initializeAuth();
   }
 
   Future<void> _initializeAuth() async {
+    print('[AuthProvider] _initializeAuth START');
     final token = await AuthStorage.getToken();
     final userId = await AuthStorage.getUserId();
+    print('[AuthProvider] got token=$token userId=$userId');
 
     if (token != null && userId != null) {
       _token = token;
       final user = await _userRepository.getById(userId);
       _user = user;
+      print('[AuthProvider] restored user id=${user?.id}');
       notifyListeners();
     }
+    print('[AuthProvider] _initializeAuth END');
   }
 
   Future<bool> register({
@@ -43,6 +48,7 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
+    print('[AuthProvider] register START name=$name email=$email');
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -57,11 +63,8 @@ class AuthProvider extends ChangeNotifier {
         password,
       );
 
-      // Cria usuário local com dados da API
-      // Se a API retornar ID, usa; senão, gera um automático
-      final userId = apiResponse['id'] != null
-          ? apiResponse['id'] as int
-          : DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      // Cria usuário local com dados do registro
+      final userId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       final user = User(
         id: userId,
@@ -77,39 +80,42 @@ class AuthProvider extends ChangeNotifier {
         _user = user;
       } catch (dbError) {
         print("Erro ao salvar usuário no banco: $dbError");
-        // Se já existe, apenas atualiza
         _user = user;
       }
 
       _isLoading = false;
+      print('[AuthProvider] register SUCCESS userId=${user.id}');
       notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString().replaceAll("Exception: ", "");
       _isLoading = false;
+      print('[AuthProvider] register ERROR: $_error');
       notifyListeners();
       return false;
     }
   }
 
   Future<bool> login(String username, String password) async {
+    print('[AuthProvider] login START username=$username');
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Faz login na API
+      // Faz login na API e recebe token
       final apiResponse = await _authService.login(username, password);
-
-      // Extrai token
       _token = apiResponse['access_token'] as String?;
+      print('[AuthProvider] login got token=$_token');
 
-      // Busca ou cria usuário local
+      // Busca usuário local por email (username é geralmente o email)
       User? user = await _userRepository.getByEmail(username);
 
+      // Se não encontrar, cria um usuário local mínimo
       if (user == null) {
-        // Se não existe, cria um novo usuário local com dados básicos
+        final userId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         user = User(
+          id: userId,
           nome: username,
           email: username,
           senha: password,
@@ -120,10 +126,12 @@ class AuthProvider extends ChangeNotifier {
       }
 
       _user = user;
+      print('[AuthProvider] login resolved user id=${user?.id}');
 
-      // Salva token e userId no armazenamento persistente
+      // Salva token e userId em SharedPreferences
       if (_user?.id != null && _token != null) {
         await AuthStorage.saveToken(_token!, _user!.id!);
+        print('[AuthProvider] saved token and userId=${_user!.id!}');
       }
 
       _isLoading = false;
@@ -132,6 +140,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _error = e.toString().replaceAll("Exception: ", "");
       _isLoading = false;
+      print('[AuthProvider] login ERROR: $_error');
       notifyListeners();
       return false;
     }
