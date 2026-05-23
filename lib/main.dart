@@ -520,6 +520,10 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _refreshJogos() async {
+    await _loadJogos();
+  }
+
   @override
   Widget build(BuildContext context) {
     const green = Color(0xFF12964A);
@@ -718,9 +722,83 @@ class _HomePageState extends State<HomePage> {
                           gameplay.console,
                           style: const TextStyle(color: Colors.white54),
                         ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.white70,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    backgroundColor: const Color(0xFF1E1E1E),
+                                    title: const Text(
+                                      'Confirmar exclusão',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    content: Text(
+                                      'Deseja realmente excluir "$title"?',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(dialogContext),
+                                        child: const Text(
+                                          'Cancelar',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () async {
+                                          Navigator.pop(dialogContext);
+                                          try {
+                                            await gameplayProvider
+                                                .deleteGameplay(gameplay.id!);
+                                            if (!mounted) return;
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Gameplay excluída com sucesso',
+                                                ),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+                                          } catch (e) {
+                                            if (!mounted) return;
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Erro ao excluir: $e',
+                                                ),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: const Text(
+                                          'Excluir',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: Colors.white70,
+                            ),
+                          ],
                         ),
                         onTap: () async {
                           final result = await Navigator.push(
@@ -732,6 +810,7 @@ class _HomePageState extends State<HomePage> {
                           );
 
                           if (result == true) {
+                            await _refreshJogos();
                             final gameplayProvider = context
                                 .read<GameplayProvider>();
                             final authProvider = context.read<AuthProvider>();
@@ -758,6 +837,7 @@ class _HomePageState extends State<HomePage> {
           );
 
           if (result == true) {
+            await _refreshJogos();
             final gameplayProvider = context.read<GameplayProvider>();
             final authProvider = context.read<AuthProvider>();
             final userId = authProvider.user?.id;
@@ -927,19 +1007,6 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfilePage(),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -1012,81 +1079,6 @@ Widget _profileStat(String label, String value, Color green) {
       ],
     ),
   );
-}
-
-class EditProfilePage extends StatefulWidget {
-  const EditProfilePage({super.key});
-
-  @override
-  State<EditProfilePage> createState() => _EditProfilePageState();
-}
-
-class _EditProfilePageState extends State<EditProfilePage> {
-  final TextEditingController _nameController = TextEditingController(text: '');
-
-  @override
-  Widget build(BuildContext context) {
-    const green = Color(0xFF12964A);
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.green),
-        title: const Text(
-          'Editar Perfil',
-          style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
-        ),
-        centerTitle: true,
-      ),
-      backgroundColor: const Color(0xFF121212),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Nome',
-              style: TextStyle(color: Colors.white70, fontFamily: 'Orbitron'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFF1E1E1E),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: green,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Salvar',
-                  style: TextStyle(fontFamily: 'Orbitron'),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class AddGamePage extends StatefulWidget {
