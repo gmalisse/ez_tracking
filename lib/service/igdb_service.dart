@@ -184,4 +184,38 @@ class IGDBService {
 
     return data.map((e) => IGDBPlataforma.fromJson(e)).toList();
   }
+
+  Future<String?> getCoverForGame(int gameId) async {
+    final url = Uri.parse('https://api.igdb.com/v4/covers');
+
+    final body =
+        '''
+      fields image_id;
+      where game = $gameId;
+      limit 1;
+    ''';
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Client-ID': clientId,
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as List;
+        if (data.isNotEmpty && data.first.containsKey('image_id')) {
+          final imageId = data.first['image_id'];
+          return 'https://images.igdb.com/igdb/image/upload/t_cover_big/$imageId.jpg';
+        }
+      }
+    } catch (e) {
+      print('Erro ao buscar cover do jogo $gameId: $e');
+    }
+    return null;
+  }
 }

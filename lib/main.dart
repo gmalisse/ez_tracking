@@ -502,7 +502,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final JogoRepository _jogoRepository = JogoRepository();
+  final IGDBRepository _igdbRepository = IGDBRepository(IGDBService());
   Map<int, Jogo> _jogosById = {};
+  Map<int, String?> _coverUrlsById = {};
   int? _loadedUserId;
 
   @override
@@ -522,6 +524,28 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _refreshJogos() async {
     await _loadJogos();
+  }
+
+  Future<String?> _getCoverUrl(int jogoId) async {
+    // Se já está no cache, retorna
+    if (_coverUrlsById.containsKey(jogoId)) {
+      return _coverUrlsById[jogoId];
+    }
+
+    // Caso contrário, busca da API
+    try {
+      final url = await _igdbRepository.getCoverForGame(jogoId);
+      setState(() {
+        _coverUrlsById[jogoId] = url;
+      });
+      return url;
+    } catch (e) {
+      print('Erro ao buscar cover do jogo $jogoId: $e');
+      setState(() {
+        _coverUrlsById[jogoId] = null;
+      });
+      return null;
+    }
   }
 
   @override
@@ -706,6 +730,53 @@ class _HomePageState extends State<HomePage> {
                       final title = jogo?.nome ?? 'Jogo desconhecido';
 
                       return ListTile(
+                        leading: FutureBuilder<String?>(
+                          future: _getCoverUrl(gameplay.jogosId),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data != null) {
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  snapshot.data!,
+                                  width: 50,
+                                  height: 70,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 50,
+                                      height: 70,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1E1E1E),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.white54,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            }
+                            return Container(
+                              width: 50,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E1E1E),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                         tileColor: const Color(0xFF1E1E1E),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

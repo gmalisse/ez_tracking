@@ -30,4 +30,8 @@ class IGDBRepository {
   Future<List<IGDBPlataforma>> getPlatformsByIds(List<int> ids) {
     return service.getPlatformsByIds(ids);
   }
+
+  Future<String?> getCoverForGame(int gameId) {
+    return service.getCoverForGame(gameId);
+  }
 }
