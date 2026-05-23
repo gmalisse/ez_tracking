@@ -18,7 +18,7 @@ class DbHelper {
     String path = join(await getDatabasesPath(), 'ez_tracking.db');
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -52,6 +52,7 @@ class DbHelper {
         dataFim TEXT,
         zerado INTEGER NOT NULL,
         console TEXT NOT NULL,
+        rating INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (usersId) REFERENCES user (id),
         FOREIGN KEY (jogosId) REFERENCES jogo (id)
       )
@@ -115,6 +116,18 @@ class DbHelper {
         await db.execute(
           'CREATE UNIQUE INDEX IF NOT EXISTS idx_userdata_userId ON userdata (userId)',
         );
+      }
+    }
+
+    if (oldVersion < 4) {
+      final hasGameplayTable = await _tableExists(db, 'gameplay');
+      if (hasGameplayTable) {
+        final hasRatingColumn = await _columnExists(db, 'gameplay', 'rating');
+        if (!hasRatingColumn) {
+          await db.execute(
+            'ALTER TABLE gameplay ADD COLUMN rating INTEGER NOT NULL DEFAULT 0',
+          );
+        }
       }
     }
   }

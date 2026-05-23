@@ -1100,6 +1100,7 @@ class _AddGamePageState extends State<AddGamePage> {
   DateTime? _startDate;
   DateTime? _endDate;
   bool _isCompleted = false;
+  int _rating = 0;
 
   @override
   void initState() {
@@ -1121,6 +1122,7 @@ class _AddGamePageState extends State<AddGamePage> {
             '${_endDate!.day.toString().padLeft(2, '0')}/${_endDate!.month.toString().padLeft(2, '0')}/${_endDate!.year}';
       }
       _isCompleted = gameplay.zerado;
+      _rating = gameplay.rating;
       _loadPlatformsForSelectedGame(selectedPlatformName: gameplay.console);
     }
   }
@@ -1603,6 +1605,34 @@ class _AddGamePageState extends State<AddGamePage> {
                 ),
 
                 const SizedBox(height: 20),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Sua nota para o jogo',
+                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: List.generate(
+                    5,
+                    (index) => IconButton(
+                      iconSize: 32,
+                      icon: Icon(
+                        index < _rating ? Icons.star : Icons.star_border,
+                        color: index < _rating ? Colors.amber : Colors.white54,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _rating = index + 1;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
                     final authProvider = context.read<AuthProvider>();
@@ -1673,6 +1703,7 @@ class _AddGamePageState extends State<AddGamePage> {
                       dataFim: _endDate,
                       zerado: _isCompleted,
                       console: selectedPlatform.name,
+                      rating: _rating,
                     );
 
                     final gameplayProvider = context.read<GameplayProvider>();

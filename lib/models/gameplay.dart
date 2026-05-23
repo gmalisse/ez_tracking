@@ -7,6 +7,7 @@ class Gameplay {
   final DateTime? dataFim;
   final bool zerado;
   final String console;
+  final int rating;
 
   Gameplay({
     this.id,
@@ -17,6 +18,7 @@ class Gameplay {
     this.dataFim,
     required this.zerado,
     required this.console,
+    this.rating = 0,
   });
 
   static int? _parseInt(Object? value) {
@@ -35,6 +37,7 @@ class Gameplay {
       'dataFim': dataFim?.toIso8601String(),
       'zerado': zerado ? 1 : 0,
       'console': console,
+      'rating': rating,
     };
   }
 
@@ -48,6 +51,7 @@ class Gameplay {
       dataFim: map['dataFim'] != null ? DateTime.parse(map['dataFim']) : null,
       zerado: map['zerado'] == 1,
       console: map['console'],
+      rating: _parseInt(map['rating']) ?? 0,
     );
   }
 }
