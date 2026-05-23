@@ -83,10 +83,25 @@ class AuthProvider extends ChangeNotifier {
         _user = user;
       }
 
-      _isLoading = false;
       print('[AuthProvider] register SUCCESS userId=${user.id}');
-      notifyListeners();
-      return true;
+
+      // Após registrar, tenta logar automaticamente para obter token
+      try {
+        final logged = await this.login(login, password);
+        if (logged) {
+          return true;
+        } else {
+          // Registro ok, mas login falhou
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      } catch (e) {
+        _isLoading = false;
+        _error = 'Registro efetuado, mas falha ao logar automaticamente: $e';
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
       _error = e.toString().replaceAll("Exception: ", "");
       _isLoading = false;
