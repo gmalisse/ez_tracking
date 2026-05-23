@@ -9,6 +9,8 @@ class AuthProvider extends ChangeNotifier {
   String? _token;
   bool _isLoading = false;
   String? _error;
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
 
   final AuthService _authService = AuthService();
   final UserRepository _userRepository = UserRepository();
@@ -27,17 +29,24 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _initializeAuth() async {
     print('[AuthProvider] _initializeAuth START');
-    final token = await AuthStorage.getToken();
-    final userId = await AuthStorage.getUserId();
-    print('[AuthProvider] got token=$token userId=$userId');
+    try {
+      final token = await AuthStorage.getToken();
+      final userId = await AuthStorage.getUserId();
+      print('[AuthProvider] got token=$token userId=$userId');
 
-    if (token != null && userId != null) {
-      _token = token;
-      final user = await _userRepository.getById(userId);
-      _user = user;
-      print('[AuthProvider] restored user id=${user?.id}');
-      notifyListeners();
+      if (token != null && userId != null) {
+        _token = token;
+        final user = await _userRepository.getById(userId);
+        _user = user;
+        print('[AuthProvider] restored user id=${user?.id}',);
+      }
+    } catch (e) {
+      print('[AuthProvider] _initializeAuth ERROR: $e',
+      );
     }
+
+    _isInitialized = true;
+    notifyListeners();
     print('[AuthProvider] _initializeAuth END');
   }
 

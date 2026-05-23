@@ -18,6 +18,31 @@ import 'service/auth_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/gameplay_provider.dart';
 
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider =
+        context.watch<AuthProvider>();
+
+    if (!authProvider.isInitialized) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF121212),
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (authProvider.isAuthenticated) {
+      return const HomePage();
+    }
+
+    return const LoginPage();
+  }
+}
+
 void main() {
   if (Platform.isWindows) {
     sqfliteFfiInit();
@@ -52,7 +77,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           scaffoldBackgroundColor: const Color(0xFF121212), // fundo
         ),
-        home: const LoginPage(),
+        home: const AuthGate(),
       ),
     );
   }
