@@ -14,7 +14,9 @@ import '../repositories/userdata_repository.dart';
 import '../service/igdb_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'dart:io';
+import 'dart:async';
 import 'service/auth_service.dart';
+import 'service/ai_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/gameplay_provider.dart';
 import 'theme/theme.dart';
@@ -78,6 +80,187 @@ class MyApp extends StatelessWidget {
         darkTheme: darkTheme,
         themeMode: ThemeMode.system,
         home: const AuthGate(),
+      ),
+    );
+  }
+}
+
+
+class AIChatPage extends StatefulWidget {
+  const AIChatPage({super.key});
+
+  @override
+  State<AIChatPage> createState() => _AIChatPageState();
+}
+
+class _AIChatPageState extends State<AIChatPage> {
+  final List<Map<String, dynamic>> _messages = [];
+  final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final AIService _aiService = AIService();
+  bool _isLoading = false;
+
+  void _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _messages.add({'text': text, 'isUser': true});
+      _controller.clear();
+      _isLoading = true;
+    });
+
+    // Scroll to bottom
+    Timer(const Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 80,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+
+    try {
+      // Chama a API de IA com o token do usuário
+      final response = await _aiService.sendMessage(text);
+      _addBotResponse(response);
+    } catch (e) {
+      _addBotResponse('Erro ao conectar com a IA: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _addBotResponse(String text) {
+    setState(() {
+      _messages.add({'text': text, 'isUser': false});
+    });
+
+    // Auto scroll após adicionar mensagem
+    Timer(const Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 80,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const bg = Color(0xFF121212);
+    const bubbleColor = Color(0xFF1E1E1E);
+    const accent = Color(0xFF12964A);
+
+    return Scaffold(
+      backgroundColor: bg,
+      appBar: AppBar(
+        backgroundColor: bg,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.green),
+        title: const Text(
+          'Converse com a IA',
+          style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
+        ),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  final isUser = msg['isUser'] as bool;
+                  return Align(
+                    alignment:
+                        isUser ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.all(12),
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.75,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isUser ? accent : bubbleColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        msg['text'] as String,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (_isLoading)
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Color(0xFF12964A),
+                  ),
+                ),
+              ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              color: const Color(0xFF121212),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Escreva uma mensagem...',
+                        hintStyle: const TextStyle(color: Colors.white54),
+                        filled: true,
+                        fillColor: bubbleColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      onSubmitted: _isLoading ? null : (_) => _sendMessage(),
+                      enabled: !_isLoading,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.send, color: Colors.black),
+                      onPressed: _isLoading ? null : _sendMessage,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -588,7 +771,7 @@ class _HomePageState extends State<HomePage> {
       print(
         '[HomePage] addPostFrameCallback currentUserId=$currentUserId loadedUserId=$_loadedUserId',
       );
-      if (currentUserId != null && _loadedUserId != currentUserId) {
+      if (_loadedUserId != currentUserId) {
         _loadedUserId = currentUserId;
         print('[HomePage] calling loadUserGameplays for userId=$currentUserId');
         gameplayProvider.loadUserGameplays(currentUserId);
@@ -669,6 +852,25 @@ class _HomePageState extends State<HomePage> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => const ProfilePage(),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.smart_toy, color: Colors.white),
+                    title: const Text(
+                      'Converse com a IA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Orbitron',
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AIChatPage(),
                         ),
                       );
                     },
