@@ -160,16 +160,13 @@ class _AIChatPageState extends State<AIChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF121212);
-    const bubbleColor = Color(0xFF1E1E1E);
-    const accent = Color(0xFF12964A);
 
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: bg,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.green),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
         title: const Text(
           'Converse com a IA',
           style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
@@ -197,12 +194,12 @@ class _AIChatPageState extends State<AIChatPage> {
                         maxWidth: MediaQuery.of(context).size.width * 0.75,
                       ),
                       decoration: BoxDecoration(
-                        color: isUser ? accent : bubbleColor,
+                        color: isUser ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         msg['text'] as String,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       ),
                     ),
                   );
@@ -220,18 +217,18 @@ class _AIChatPageState extends State<AIChatPage> {
               ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              color: const Color(0xFF121212),
+              color: Theme.of(context).colorScheme.surface,
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         hintText: 'Escreva uma mensagem...',
-                        hintStyle: const TextStyle(color: Colors.white54),
+                        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         filled: true,
-                        fillColor: bubbleColor,
+                        fillColor: Theme.of(context).colorScheme.primary,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
@@ -248,7 +245,7 @@ class _AIChatPageState extends State<AIChatPage> {
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: accent,
+                      color: Theme.of(context).colorScheme.secondary,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -857,11 +854,11 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.smart_toy, color: Colors.white),
-                    title: const Text(
+                    leading: Icon(Icons.smart_toy, color: Theme.of(context).colorScheme.onSurface),
+                    title: Text(
                       'Converse com a IA',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontFamily: 'Orbitron',
                       ),
                     ),
