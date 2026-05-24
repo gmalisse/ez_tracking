@@ -17,6 +17,7 @@ import 'dart:io';
 import 'service/auth_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/gameplay_provider.dart';
+import 'theme/theme.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -27,8 +28,8 @@ class AuthGate extends StatelessWidget {
         context.watch<AuthProvider>();
 
     if (!authProvider.isInitialized) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF121212),
+      return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: Center(
           child: CircularProgressIndicator(),
         ),
@@ -73,10 +74,9 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('pt', 'BR')],
-        theme: ThemeData(
-          useMaterial3: true,
-          scaffoldBackgroundColor: const Color(0xFF121212), // fundo
-        ),
+        theme: lightTheme,
+        darkTheme: darkTheme,
+        themeMode: ThemeMode.system,
         home: const AuthGate(),
       ),
     );
@@ -148,8 +148,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF12964A);
-    const inputColor = Color(0xFF1E1E1E);
 
     return Scaffold(
       body: Center(
@@ -161,17 +159,17 @@ class _LoginPageState extends State<LoginPage> {
               Image.asset('assets/logo.png', height: 100, width: 250),
               const SizedBox(height: 24),
 
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Nome de usuário', style: TextStyle(color: green)),
+                child: Text('Nome de usuário', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _usernameController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: inputColor,
+                  fillColor: Theme.of(context).colorScheme.primary,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
@@ -181,18 +179,18 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 16),
 
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Senha', style: TextStyle(color: green)),
+                child: Text('Senha', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: inputColor,
+                  fillColor: Theme.of(context).colorScheme.primary,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
@@ -207,13 +205,13 @@ class _LoginPageState extends State<LoginPage> {
                 child: ElevatedButton(
                   onPressed: _handleLogin,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: green,
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Login',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       fontFamily: 'Orbitron',
                     ),
                   ),
@@ -229,9 +227,9 @@ class _LoginPageState extends State<LoginPage> {
                     MaterialPageRoute(builder: (_) => const AddUserPage()),
                   );
                 },
-                child: const Text(
+                child: Text(
                   'Ou cadastre-se',
-                  style: TextStyle(color: Colors.white, fontFamily: 'Orbitron'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'Orbitron'),
                 ),
               ),
             ],
@@ -338,18 +336,16 @@ class _AddUserPageState extends State<AddUserPage> {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF12964A);
-    const inputColor = Color(0xFF1E1E1E);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.green),
-        title: const Text(
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.secondary),
+        title: Text(
           'Cadastro',
-          style: TextStyle(fontFamily: 'Orbitron', color: Colors.green),
+          style: TextStyle(fontFamily: 'Orbitron', color: Theme.of(context).colorScheme.secondary),
         ),
         centerTitle: true,
       ),
@@ -361,33 +357,33 @@ class _AddUserPageState extends State<AddUserPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Crie sua conta',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: green,
+                    color: Theme.of(context).colorScheme.secondary,
                     fontFamily: 'Orbitron',
                   ),
                 ),
 
                 const SizedBox(height: 20),
 
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Nome',
-                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'Orbitron'),
                   ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _firstNameController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: inputColor,
+                    fillColor: Theme.of(context).colorScheme.primary,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -397,20 +393,20 @@ class _AddUserPageState extends State<AddUserPage> {
 
                 const SizedBox(height: 12),
 
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Sobrenome',
-                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'Orbitron'),
                   ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _lastNameController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: inputColor,
+                    fillColor: Theme.of(context).colorScheme.primary,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -420,20 +416,20 @@ class _AddUserPageState extends State<AddUserPage> {
 
                 const SizedBox(height: 12),
 
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Nome de usuário',
-                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'Orbitron'),
                   ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _usernameController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: inputColor,
+                    fillColor: Theme.of(context).colorScheme.primary,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -443,21 +439,21 @@ class _AddUserPageState extends State<AddUserPage> {
 
                 const SizedBox(height: 12),
 
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Email',
-                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'Orbitron'),
                   ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: inputColor,
+                    fillColor: Theme.of(context).colorScheme.primary,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -467,21 +463,21 @@ class _AddUserPageState extends State<AddUserPage> {
 
                 const SizedBox(height: 12),
 
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Senha',
-                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'Orbitron'),
                   ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _passwordController,
                   obscureText: true,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: inputColor,
+                    fillColor: Theme.of(context).colorScheme.primary,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -494,7 +490,7 @@ class _AddUserPageState extends State<AddUserPage> {
                 ElevatedButton(
                   onPressed: _registerUser,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: green,
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -575,7 +571,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF12964A);
 
     // Watch do authProvider para pegar userId
     final authProvider = context.watch<AuthProvider>();
@@ -602,12 +597,12 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.green, size: 30),
+          icon: Icon(Icons.menu, color: Theme.of(context).colorScheme.secondary, size: 30),
           onPressed: () {
             _scaffoldKey.currentState?.openDrawer();
           },
@@ -621,7 +616,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       drawer: Drawer(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         child: Column(
           children: [
             SizedBox(
@@ -642,11 +637,11 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.zero,
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.home, color: Colors.white),
-                    title: const Text(
+                    leading: Icon(Icons.home, color: Theme.of(context).colorScheme.onSurface),
+                    title: Text(
                       'Home',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontFamily: 'Orbitron',
                       ),
                     ),
@@ -660,11 +655,11 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.person, color: Colors.white),
-                    title: const Text(
+                    leading: Icon(Icons.person, color: Theme.of(context).colorScheme.onSurface),
+                    title: Text(
                       'Perfil',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontFamily: 'Orbitron',
                       ),
                     ),
@@ -720,10 +715,10 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Meus jogos',
               style: TextStyle(
-                color: green,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 24,
                 fontFamily: 'Orbitron',
               ),
@@ -737,10 +732,10 @@ class _HomePageState extends State<HomePage> {
                   }
 
                   if (gameplayProvider.gameplays.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Text(
                         'Nenhuma gameplay salva ainda.',
-                        style: TextStyle(color: Colors.white70),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                       ),
                     );
                   }
@@ -771,7 +766,7 @@ class _HomePageState extends State<HomePage> {
                                       width: 50,
                                       height: 70,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF1E1E1E),
+                                        color: Theme.of(context).colorScheme.primary,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: const Icon(
@@ -787,7 +782,7 @@ class _HomePageState extends State<HomePage> {
                               width: 50,
                               height: 70,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E1E1E),
+                                color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Center(
@@ -802,21 +797,21 @@ class _HomePageState extends State<HomePage> {
                             );
                           },
                         ),
-                        tileColor: const Color(0xFF1E1E1E),
+                        tileColor: Theme.of(context).colorScheme.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         title: Text(
                           title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontFamily: 'Orbitron',
                             fontSize: 16,
                           ),
                         ),
                         subtitle: Text(
                           gameplay.console,
-                          style: const TextStyle(color: Colors.white54),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -827,25 +822,25 @@ class _HomePageState extends State<HomePage> {
                                 showDialog(
                                   context: context,
                                   builder: (dialogContext) => AlertDialog(
-                                    backgroundColor: const Color(0xFF1E1E1E),
-                                    title: const Text(
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    title: Text(
                                       'Confirmar exclusão',
-                                      style: TextStyle(color: Colors.white),
+                                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                                     ),
                                     content: Text(
                                       'Deseja realmente excluir "$title"?',
-                                      style: const TextStyle(
-                                        color: Colors.white70,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                       ),
                                     ),
                                     actions: [
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.pop(dialogContext),
-                                        child: const Text(
+                                        child: Text(
                                           'Cancelar',
                                           style: TextStyle(
-                                            color: Colors.white70,
+                                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                           ),
                                         ),
                                       ),
@@ -859,11 +854,11 @@ class _HomePageState extends State<HomePage> {
                                             ScaffoldMessenger.of(
                                               context,
                                             ).showSnackBar(
-                                              const SnackBar(
+                                              SnackBar(
                                                 content: Text(
                                                   'Gameplay excluída com sucesso',
                                                 ),
-                                                backgroundColor: Colors.green,
+                                                backgroundColor: Theme.of(context).colorScheme.secondary,
                                               ),
                                             );
                                           } catch (e) {
@@ -942,7 +937,7 @@ class _HomePageState extends State<HomePage> {
             }
           }
         },
-        backgroundColor: green,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
         child: const Icon(Icons.add, color: Colors.black),
       ),
     );
@@ -1037,7 +1032,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF12964A);
     final authProvider = context.watch<AuthProvider>();
     final gameplayProvider = context.watch<GameplayProvider>();
     final userName = authProvider.user?.nome ?? 'Usuário';
@@ -1093,9 +1087,9 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.green),
         title: const Text(
@@ -1112,7 +1106,7 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 16),
             CircleAvatar(
               radius: 52,
-              backgroundColor: green,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
               child: CircleAvatar(
                 radius: 48,
                 backgroundImage: const AssetImage('assets/logo.png'),
@@ -1121,8 +1115,8 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 12),
             Text(
               userName,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontFamily: 'Orbitron',
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
@@ -1132,14 +1126,14 @@ class _ProfilePageState extends State<ProfilePage> {
             if (gameplayProvider.isLoading)
               const Center(child: CircularProgressIndicator())
             else ...[
-              _profileStat('Jogos jogados', '$jogosJogados', green),
+              _profileStat('Jogos jogados', '$jogosJogados', Theme.of(context).colorScheme.onSurface, context),
               _profileStat(
                 'Total de horas',
                 totalHoras.toStringAsFixed(1),
-                green,
+                Theme.of(context).colorScheme.onSurface, context,
               ),
-              _profileStat('Console favorito', generoFavorito, green),
-              _profileStat('Jogo com mais horas', jogoMaisHoras, green),
+              _profileStat('Console favorito', generoFavorito, Theme.of(context).colorScheme.onSurface, context),
+              _profileStat('Jogo com mais horas', jogoMaisHoras, Theme.of(context).colorScheme.onSurface, context),
             ],
           ],
         ),
@@ -1148,12 +1142,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-Widget _profileStat(String label, String value, Color green) {
+Widget _profileStat(String label, String value, Color green, BuildContext context) {
   return Container(
     margin: const EdgeInsets.only(bottom: 12),
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: const Color(0xFF1E1E1E),
+      color: Theme.of(context).colorScheme.primary,
       borderRadius: BorderRadius.circular(10),
       border: Border.all(color: green.withAlpha((0.4 * 255).round())),
     ),
@@ -1162,12 +1156,12 @@ Widget _profileStat(String label, String value, Color green) {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontFamily: 'Orbitron'),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'Orbitron'),
         ),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontFamily: 'Orbitron',
             fontWeight: FontWeight.w700,
           ),
@@ -1281,13 +1275,13 @@ class _AddGamePageState extends State<AddGamePage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF12964A),
-              onPrimary: Colors.white,
-              surface: Color(0xFF1E1E1E),
-              onSurface: Colors.white,
+            colorScheme: ColorScheme.dark(
+              primary: Theme.of(context).colorScheme.secondary,
+              onPrimary: Theme.of(context).colorScheme.onSurface,
+              surface: Theme.of(context).colorScheme.primary,
+              onSurface: Theme.of(context).colorScheme.onSurface,
             ),
-            dialogBackgroundColor: const Color(0xFF121212),
+            dialogBackgroundColor: Theme.of(context).colorScheme.surface,
           ),
           child: child!,
         );
@@ -1320,13 +1314,11 @@ class _AddGamePageState extends State<AddGamePage> {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF12964A);
-    const inputColor = Color(0xFF1E1E1E);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.green),
         title: Text(
@@ -1346,11 +1338,11 @@ class _AddGamePageState extends State<AddGamePage> {
                 const SizedBox(height: 12),
 
                 if (widget.gameplay == null) ...[
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Jogo',
-                      style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                      style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontFamily: 'Orbitron'),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1383,8 +1375,8 @@ class _AddGamePageState extends State<AddGamePage> {
                     dropdownBuilder: (context, selectedItem) {
                       return Text(
                         selectedItem?.name ?? 'Selecione um jogo',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 16,
                         ),
                       );
@@ -1400,12 +1392,12 @@ class _AddGamePageState extends State<AddGamePage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Align(
+                            Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'Plataforma',
                                 style: TextStyle(
-                                  color: green,
+                                  color: Theme.of(context).colorScheme.secondary,
                                   fontFamily: 'Orbitron',
                                 ),
                               ),
@@ -1446,20 +1438,20 @@ class _AddGamePageState extends State<AddGamePage> {
                               ),
                               dropdownBuilder: (context, selectedItem) {
                                 if (_selectedValue == null) {
-                                  return const Text(
+                                  return Text(
                                     'Selecione um jogo primeiro',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       fontSize: 16,
                                     ),
                                   );
                                 }
 
                                 if (_isLoadingPlatforms) {
-                                  return const Text(
+                                  return Text(
                                     'Carregando plataformas...',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       fontSize: 16,
                                     ),
                                   );
@@ -1468,16 +1460,16 @@ class _AddGamePageState extends State<AddGamePage> {
                                 return Text(
                                   selectedItem?.name ??
                                       'Selecione uma plataforma',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontSize: 16,
                                   ),
                                 );
                               },
-                              decoratorProps: const DropDownDecoratorProps(
+                              decoratorProps: DropDownDecoratorProps(
                                 decoration: InputDecoration(
                                   filled: true,
-                                  fillColor: inputColor,
+                                  fillColor: Theme.of(context).colorScheme.primary,
                                   border: OutlineInputBorder(
                                     borderSide: BorderSide.none,
                                   ),
@@ -1494,17 +1486,17 @@ class _AddGamePageState extends State<AddGamePage> {
                         children: [
                           Checkbox(
                             value: _isCompleted,
-                            activeColor: green,
+                            activeColor: Theme.of(context).colorScheme.secondary,
                             onChanged: (value) {
                               setState(() {
                                 _isCompleted = value!;
                               });
                             },
                           ),
-                          const Text(
+                          Text(
                             'Jogo concluído',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontFamily: 'Orbitron',
                             ),
                           ),
@@ -1517,24 +1509,24 @@ class _AddGamePageState extends State<AddGamePage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: inputColor,
+                      color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Jogo',
                           style: TextStyle(
-                            color: green,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontFamily: 'Orbitron',
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           widget.jogo?.nome ?? 'Jogo',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1546,18 +1538,18 @@ class _AddGamePageState extends State<AddGamePage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Plataforma',
                                     style: TextStyle(
-                                      color: green,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       fontFamily: 'Orbitron',
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     widget.gameplay?.console ?? 'Plataforma',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1570,17 +1562,17 @@ class _AddGamePageState extends State<AddGamePage> {
                               children: [
                                 Checkbox(
                                   value: _isCompleted,
-                                  activeColor: green,
+                                  activeColor: Theme.of(context).colorScheme.secondary,
                                   onChanged: (value) {
                                     setState(() {
                                       _isCompleted = value!;
                                     });
                                   },
                                 ),
-                                const Text(
+                                Text(
                                   'Jogo concluído',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontFamily: 'Orbitron',
                                   ),
                                 ),
@@ -1595,21 +1587,21 @@ class _AddGamePageState extends State<AddGamePage> {
 
                 const SizedBox(height: 12),
 
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Horas jogadas',
-                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'Orbitron'),
                   ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _hoursController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: inputColor,
+                    fillColor: Theme.of(context).colorScheme.primary,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -1624,12 +1616,12 @@ class _AddGamePageState extends State<AddGamePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Align(
+                          Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
                               'Início da jogatina',
                               style: TextStyle(
-                                color: green,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontFamily: 'Orbitron',
                               ),
                             ),
@@ -1639,15 +1631,15 @@ class _AddGamePageState extends State<AddGamePage> {
                             controller: _startDateController,
                             readOnly: true,
                             onTap: () => _selectDate(context, true),
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                             decoration: InputDecoration(
                               hintText: 'Selecione a data',
-                              hintStyle: const TextStyle(color: Colors.white54),
+                              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                               filled: true,
-                              fillColor: inputColor,
-                              suffixIcon: const Icon(
+                              fillColor: Theme.of(context).colorScheme.primary,
+                              suffixIcon: Icon(
                                 Icons.calendar_today,
-                                color: Colors.white70,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -1663,12 +1655,12 @@ class _AddGamePageState extends State<AddGamePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Align(
+                          Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
                               'Fim da jogatina',
                               style: TextStyle(
-                                color: green,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontFamily: 'Orbitron',
                               ),
                             ),
@@ -1678,15 +1670,15 @@ class _AddGamePageState extends State<AddGamePage> {
                             controller: _endDateController,
                             readOnly: true,
                             onTap: () => _selectDate(context, false),
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                             decoration: InputDecoration(
                               hintText: 'Selecione a data',
-                              hintStyle: const TextStyle(color: Colors.white54),
+                              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                               filled: true,
-                              fillColor: inputColor,
-                              suffixIcon: const Icon(
+                              fillColor: Theme.of(context).colorScheme.primary,
+                              suffixIcon: Icon(
                                 Icons.calendar_today,
-                                color: Colors.white70,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -1701,11 +1693,11 @@ class _AddGamePageState extends State<AddGamePage> {
                 ),
 
                 const SizedBox(height: 20),
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Sua nota para o jogo',
-                    style: TextStyle(color: green, fontFamily: 'Orbitron'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'Orbitron'),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1717,7 +1709,7 @@ class _AddGamePageState extends State<AddGamePage> {
                       iconSize: 32,
                       icon: Icon(
                         index < _rating ? Icons.star : Icons.star_border,
-                        color: index < _rating ? Colors.amber : Colors.white54,
+                        color: index < _rating ? Colors.amber : Theme.of(context).colorScheme.onSurface,
                       ),
                       onPressed: () {
                         setState(() {
@@ -1829,7 +1821,7 @@ class _AddGamePageState extends State<AddGamePage> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: green,
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
